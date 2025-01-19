@@ -87,3 +87,23 @@ Change the docker file so that the pipeline is run by the container.
 ENTRYPOINT ["python", "pipeline.py"]
 #....
 ```
+
+# PostgreSQL in docker
+
+## Run container
+
+``` bash
+docker run -it \
+  -e POSTGRES_DB="ny_taxi" \
+  -e POSTGRES_USER="root" \
+  -e POSTGRES_PASSWORD="root" \
+  -v ny_taxi_postgres_data:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  postgres:13
+```
+
+## `pgcli`
+
+``` bash
+pgcli -h localhost -p 5432 -u root
+```
