@@ -105,5 +105,5 @@ docker run -it \
 ## `pgcli`
 
 ``` bash
-pgcli -h localhost -p 5432 -u root
+pgcli -h localhost -p 5432 -u root -d ny_taxi
 ```
