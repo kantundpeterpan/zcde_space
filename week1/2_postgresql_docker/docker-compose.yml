@@ -1,0 +1,26 @@
+version: '3'
+services:
+  pgdatabase:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=ny_taxi 
+      - POSTGRES_USER=root 
+      - POSTGRES_PASSWORD=root 
+    volumes:
+      - "./ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
+    ports:
+      - "127.0.0.1:5433:5342"
+  
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user@domain.com
+      - PGADMIN_DEFAULT_PASSWORD=catsarecool
+    ports:
+      - "127.0.0.1:8081:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  pgadmin_data:
+    driver: local

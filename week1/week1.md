@@ -146,3 +146,61 @@ docker run -it --rm \
   --name=pg-database \
   postgres:13
 ```
+
+## Data ingestion script
+
+Convert `ipynb` to `.py` file
+
+```bash
+jupyter nbconvert --to py ./postgresql_pandas.ipynb
+mv postgresql_pandas.py ingest_data.py
+```
+
+Some clean up, and argparsing, see [here](./2_postgresql_docker/ingest_data.py)
+
+After deleting `yellow_taxi_data` from Postgres, run the python script
+
+```bash
+URL="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
+
+python ingest_data.py \
+  --user=root \
+  --password=root \
+  --host=localhost \
+  --port=5433 \
+  --db=ny_taxi \
+  --table_name=yellow_taxi_data \
+  --url=${URL}
+```
+
+## Containerization of the data ingestion
+
+Build the docker container for data ingestion
+
+```dockerfile
+FROM python:3.9
+
+WORKDIR /app
+COPY ingest_data.py ingest_data.py
+
+RUN pip install pandas sqlalchemy psycopg2
+
+ENTRYPOINT [ "python", "ingest_data.py" ]
+```
+
+Run the container in the `pg-network`, fails otherwise to find th Postgres server
+
+```bash
+docker run -it \
+  --network=pg-network \
+  taxi_ingest:v001 \
+    --user=root \
+    --password=root \
+    --host=pg=database \
+    --port=5432 \
+    --db=ny_taxi \
+    --table_name=yellow_taxi_data \
+    --url=${URL}
+```
+
+## Docker compose - Bringing the containers together
