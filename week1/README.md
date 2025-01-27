@@ -1,4 +1,4 @@
-# Data Engineering Zoomcamp
+# Week 1 - Docker, GCP, Terraform
 Heiner Atze
 
 # Introduction to docker

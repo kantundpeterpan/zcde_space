@@ -1,6 +1,5 @@
 ---
-title: Data Engineering Zoomcamp
-subtitle: Week 1 - Docker, GCP
+title: Week 1 - Docker, GCP, Terraform
 author: Heiner Atze
 execute:
   cache: true
