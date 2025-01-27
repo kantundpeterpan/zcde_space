@@ -285,3 +285,163 @@ LIMIT 10
 | 7 | 1 | 2021-01-01 00:12:29 | 2021-01-01 00:30:34 | 1 | 5.70 | 1 | N | 90 | 40 | 2 | 18.0 | 3.0 | 0.5 | 0.00 | 0 | 0.3 | 21.80 | 2.5 | 89 | 90 | Manhattan | Flatiron | Yellow Zone | 39 | 40 | Brooklyn | Carroll Gardens | Boro Zone |
 | 8 | 1 | 2021-01-01 00:39:16 | 2021-01-01 01:00:13 | 1 | 9.10 | 1 | N | 97 | 129 | 4 | 27.5 | 0.5 | 0.5 | 0.00 | 0 | 0.3 | 28.80 | 0.0 | 96 | 97 | Brooklyn | Fort Greene | Boro Zone | 128 | 129 | Queens | Jackson Heights | Boro Zone |
 | 9 | 1 | 2021-01-01 00:26:12 | 2021-01-01 00:39:46 | 2 | 2.70 | 1 | N | 263 | 142 | 1 | 12.0 | 3.0 | 0.5 | 3.15 | 0 | 0.3 | 18.95 | 2.5 | 262 | 263 | Manhattan | Yorkville West | Yellow Zone | 141 | 142 | Manhattan | Lincoln Square East | Yellow Zone |
+
+*Select columns of interest and merge `Zone` and `Borough`*
+
+``` sql
+--using cartesian product
+SELECT 
+  t.tpep_pickup_datetime,
+  t.tpep_dropoff_datetime,
+  lpu."Zone" || ' / ' || lpu."Borough" as pickup_loc,
+  ldo."Zone" || ' / ' || ldo."Borough" as dropoff_loc
+FROM
+  yellow_taxi_data t,
+  --location pickup lpu
+  zones lpu,
+  --location dropoff
+  zones ldo
+WHERE
+--selection on joining conditions
+  t."PULocationID" = lpu."LocationID" AND
+  t."DOLocationID" = ldo."LocationID"
+LIMIT 10
+```
+
+| tpep_pickup_datetime | tpep_dropoff_datetime | pickup_loc | dropoff_loc |
+|:---|:---|:---|:---|
+| 2021-01-01 00:30:10 | 2021-01-01 00:36:12 | Lincoln Square East / Manhattan | Central Park / Manhattan |
+| 2021-01-01 00:51:20 | 2021-01-01 00:52:19 | Upper West Side North / Manhattan | Manhattan Valley / Manhattan |
+| 2021-01-01 00:43:30 | 2021-01-01 01:11:06 | JFK Airport / Queens | Midwood / Brooklyn |
+| 2021-01-01 00:15:48 | 2021-01-01 00:31:01 | LaGuardia Airport / Queens | JFK Airport / Queens |
+| 2021-01-01 00:31:49 | 2021-01-01 00:48:21 | East Chelsea / Manhattan | Brooklyn Heights / Brooklyn |
+| 2021-01-01 00:16:29 | 2021-01-01 00:24:30 | Stuy Town/Peter Cooper Village / Manhattan | East Chelsea / Manhattan |
+| 2021-01-01 00:00:28 | 2021-01-01 00:17:28 | Forest Hills / Queens | Maspeth / Queens |
+| 2021-01-01 00:12:29 | 2021-01-01 00:30:34 | Flatiron / Manhattan | Carroll Gardens / Brooklyn |
+| 2021-01-01 00:39:16 | 2021-01-01 01:00:13 | Fort Greene / Brooklyn | Jackson Heights / Queens |
+| 2021-01-01 00:26:12 | 2021-01-01 00:39:46 | Yorkville West / Manhattan | Lincoln Square East / Manhattan |
+
+*Use the `JOIN` keyword*
+
+``` sql
+SELECT 
+  t.tpep_pickup_datetime,
+  t.tpep_dropoff_datetime,
+  lpu."Zone" || ' / ' || lpu."Borough" as pickup_loc,
+  ldo."Zone" || ' / ' || ldo."Borough" as dropoff_loc
+FROM
+  yellow_taxi_data t JOIN zones lpu
+    ON t."PULocationID" = lpu."LocationID"
+  JOIN zones ldo
+    on t."DOLocationID" = ldo."LocationID"
+LIMIT 10
+```
+
+| tpep_pickup_datetime | tpep_dropoff_datetime | pickup_loc | dropoff_loc |
+|:---|:---|:---|:---|
+| 2021-01-01 00:30:10 | 2021-01-01 00:36:12 | Lincoln Square East / Manhattan | Central Park / Manhattan |
+| 2021-01-01 00:51:20 | 2021-01-01 00:52:19 | Upper West Side North / Manhattan | Manhattan Valley / Manhattan |
+| 2021-01-01 00:43:30 | 2021-01-01 01:11:06 | JFK Airport / Queens | Midwood / Brooklyn |
+| 2021-01-01 00:15:48 | 2021-01-01 00:31:01 | LaGuardia Airport / Queens | JFK Airport / Queens |
+| 2021-01-01 00:31:49 | 2021-01-01 00:48:21 | East Chelsea / Manhattan | Brooklyn Heights / Brooklyn |
+| 2021-01-01 00:16:29 | 2021-01-01 00:24:30 | Stuy Town/Peter Cooper Village / Manhattan | East Chelsea / Manhattan |
+| 2021-01-01 00:00:28 | 2021-01-01 00:17:28 | Forest Hills / Queens | Maspeth / Queens |
+| 2021-01-01 00:12:29 | 2021-01-01 00:30:34 | Flatiron / Manhattan | Carroll Gardens / Brooklyn |
+| 2021-01-01 00:39:16 | 2021-01-01 01:00:13 | Fort Greene / Brooklyn | Jackson Heights / Queens |
+| 2021-01-01 00:26:12 | 2021-01-01 00:39:46 | Yorkville West / Manhattan | Lincoln Square East / Manhattan |
+
+### Data Integrity checks
+
+*Are there `NULL` values in the `DOLocationID` or `PULocationID`
+columns?*
+
+``` sql
+SELECT 
+  SUM(
+    CASE WHEN "PULocationID" IS NULL THEN 1
+         WHEN "DOLocationID" IS NULL THEN 1
+         ELSE 0 END
+  ) as null_locations
+FROM
+  yellow_taxi_data
+```
+
+| null_locations |
+|---------------:|
+|              0 |
+
+*Are there unknown locations referenced in the `DOLocationID` or
+`PULocationID` columns?*
+
+``` sql
+SELECT 
+  SUM(
+    CASE WHEN "PULocationID" NOT IN (
+        SELECT "LocationID" FROM zones
+    ) THEN 1
+         WHEN "DOLocationID" NOT IN (
+        SELECT "LocationID" FROM zones
+    ) THEN 1
+         ELSE 0 END
+  ) as no_unreferenced_location
+FROM
+  yellow_taxi_data
+```
+
+| no_unreferenced_location |
+|-------------------------:|
+|                        0 |
+
+*Double check the checks*
+
+- Choose a location from the `zones` table
+
+``` sql
+SELECT 
+  *
+FROM
+  zones
+WHERE 
+  "LocationID" = 142
+```
+
+| index | LocationID | Borough   | Zone                | service_zone |
+|------:|-----------:|:----------|:--------------------|:-------------|
+|   141 |        142 | Manhattan | Lincoln Square East | Yellow Zone  |
+
+- Delete a location from the `zones` table
+
+``` sql
+DELETE FROM
+  zones
+WHERE 
+  "LocationID" = 142
+```
+
+- rerun the integrity check
+
+``` sql
+SELECT 
+  SUM(
+    CASE WHEN "PULocationID" NOT IN (
+        SELECT "LocationID" FROM zones
+    ) THEN 1
+         WHEN "DOLocationID" NOT IN (
+        SELECT "LocationID" FROM zones
+    ) THEN 1
+         ELSE 0 END
+  ) as no_unreferenced_location
+FROM
+  yellow_taxi_data
+```
+
+| no_unreferenced_location |
+|-------------------------:|
+|                    77846 |
+
+- put the location back
+
+``` sql
+INSERT INTO zones (index, "LocationID", "Borough", "Zone", service_zone)
+  VALUES(141, 142, 'Manhattan', 'Lincoln Square East', 'Yellow Zone')
+```

@@ -279,3 +279,167 @@ LIMIT 10
 #| echo: false
 knitr::kable(results, format = "pipe")
 ```
+
+*Select columns of interest and merge `Zone` and `Borough`*
+
+```{sql}
+--| connection: con
+--| output.var: "results"
+--using cartesian product
+SELECT 
+  t.tpep_pickup_datetime,
+  t.tpep_dropoff_datetime,
+  lpu."Zone" || ' / ' || lpu."Borough" as pickup_loc,
+  ldo."Zone" || ' / ' || ldo."Borough" as dropoff_loc
+FROM
+  yellow_taxi_data t,
+  --location pickup lpu
+  zones lpu,
+  --location dropoff
+  zones ldo
+WHERE
+--selection on joining conditions
+  t."PULocationID" = lpu."LocationID" AND
+  t."DOLocationID" = ldo."LocationID"
+LIMIT 10
+```
+
+```{r}
+#| echo: false
+knitr::kable(results, format = "pipe")
+```
+
+*Use the `JOIN` keyword*
+
+```{sql}
+--| connection: con
+--| output.var: "results"
+SELECT 
+  t.tpep_pickup_datetime,
+  t.tpep_dropoff_datetime,
+  lpu."Zone" || ' / ' || lpu."Borough" as pickup_loc,
+  ldo."Zone" || ' / ' || ldo."Borough" as dropoff_loc
+FROM
+  yellow_taxi_data t JOIN zones lpu
+    ON t."PULocationID" = lpu."LocationID"
+  JOIN zones ldo
+    on t."DOLocationID" = ldo."LocationID"
+LIMIT 10
+```
+
+```{r}
+#| echo: false
+knitr::kable(results, format = "pipe")
+```
+
+### Data Integrity checks
+
+*Are there `NULL` values in the `DOLocationID` or `PULocationID` columns?*
+
+
+```{sql}
+--| connection: con
+--| output.var: "results"
+SELECT 
+  SUM(
+    CASE WHEN "PULocationID" IS NULL THEN 1
+         WHEN "DOLocationID" IS NULL THEN 1
+         ELSE 0 END
+  ) as null_locations
+FROM
+  yellow_taxi_data
+```
+
+```{r}
+#| echo: false
+knitr::kable(results, format = "pipe")
+```
+
+*Are there unknown locations referenced in the `DOLocationID` or `PULocationID` columns?*
+
+```{sql}
+--| connection: con
+--| output.var: "results"
+SELECT 
+  SUM(
+    CASE WHEN "PULocationID" NOT IN (
+		SELECT "LocationID" FROM zones
+	) THEN 1
+         WHEN "DOLocationID" NOT IN (
+		SELECT "LocationID" FROM zones
+	) THEN 1
+         ELSE 0 END
+  ) as no_unreferenced_location
+FROM
+  yellow_taxi_data
+```
+
+```{r}
+#| echo: false
+knitr::kable(results, format = "pipe")
+```
+
+*Double check the checks*
+
+- Choose a location from the `zones` table
+
+```{sql}
+--| connection: con
+--| output.var: "results"
+
+SELECT 
+  *
+FROM
+  zones
+WHERE 
+  "LocationID" = 142
+```
+
+```{r}
+#| echo: false
+knitr::kable(results, format = "pipe")
+```
+
+- Delete a location from the `zones` table
+
+```{sql}
+--| connection: con
+--| output.var: "results"
+
+DELETE FROM
+  zones
+WHERE 
+  "LocationID" = 142
+```
+
+- rerun the integrity check
+
+```{sql}
+--| connection: con
+--| output.var: "results"
+SELECT 
+  SUM(
+    CASE WHEN "PULocationID" NOT IN (
+		SELECT "LocationID" FROM zones
+	) THEN 1
+         WHEN "DOLocationID" NOT IN (
+		SELECT "LocationID" FROM zones
+	) THEN 1
+         ELSE 0 END
+  ) as no_unreferenced_location
+FROM
+  yellow_taxi_data
+```
+
+```{r}
+#| echo: false
+knitr::kable(results, format = "pipe")
+```
+
+- put the location back
+
+```{sql}
+--| connection: con
+INSERT INTO zones (index, "LocationID", "Borough", "Zone", service_zone)
+  VALUES(141, 142, 'Manhattan', 'Lincoln Square East', 'Yellow Zone')
+```
