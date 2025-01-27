@@ -18,7 +18,7 @@ def main(params):
 
     df_iter = pd.read_csv(url,
                     iterator = True, chunksize=100000,
-                    # parse_dates=['tpep_pickup_datetime', 'tpep_dropoff_datetime']
+                    parse_dates= params.dt_cols.split(",")
                     )
 
     while (tmp_df := next(df_iter, None)) is not None:
@@ -43,6 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--user', help='user name for Postgres')
     parser.add_argument('--table_name', help='name of the db table data will be written to')
     parser.add_argument('--url', help='url of the csv file')
+    parser.add_argument('--dt_cols', help='columns to parse as datetime')
 
     args = parser.parse_args()
     main(args)
