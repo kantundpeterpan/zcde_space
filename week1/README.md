@@ -1,76 +1,52 @@
-:::::::::::::::::::::::::::::::::::::::::::::: {#quarto-content .page-columns .page-rows-contents .page-layout-article}
-::::::::::::::::::::::::::::::::::::::::::::: {#quarto-document-content .content role="main"}
-:::::::: {#title-block-header .quarto-title-block .default}
-::: quarto-title
-# Data Engineering Zoomcamp {#data-engineering-zoomcamp .title}
-:::
+---
+author:
+- Heiner Atze
+authors:
+- Heiner Atze
+subtilte: Week 1 - Docker, GCP
+title: Data Engineering Zoomcamp
+toc-title: Table of contents
+---
 
-:::::: quarto-title-meta
-<div>
-
-::: quarto-title-meta-heading
-Author
-:::
-
-::: quarto-title-meta-contents
-Heiner Atze
-:::
-
-</div>
-::::::
-::::::::
-
-:::::::::::::: {#introduction-to-docker .section .level1}
 # Introduction to docker
 
-:::::: {#docker-setup .section .level2}
-## Docker setup {.anchored anchor-id="docker-setup"}
+## Docker setup
 
 Setup up a Docker container based on the python image, use the entry
 point `bash` to install pandas.
 
-::: {#cb1 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 # On host
 docker run -it --entrypoint=bash python:3.9
 # Within docker
 pip install pandas 
 # etc. pp. ... this is not persistent
 ```
-:::
 
 Thus, let's create a Dockerfile
 
-::: {#cb2 .sourceCode}
-``` {.sourceCode .dockerfile .code-with-copy}
+``` dockerfile
 FROM python:3.9
 
 RUN pip install pandas
 
 ENTRYPOINT [ "bash" ]
 ```
-:::
 
 Use it to build the container
 
-::: {#cb3 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 # build from dockerfile
 docker build -t test:pandas .
 ```
-:::
-::::::
 
-::::::::: {#build-a-toy-pipeline .section .level2}
-## Build a toy pipeline {.anchored anchor-id="build-a-toy-pipeline"}
+## Build a toy pipeline
 
-::::: {#create-python-script .section .level3}
-### Create python script {.anchored anchor-id="create-python-script"}
+### Create python script
 
 Let's start to prepare a data pipeline.
 
-::: {#cb4 .sourceCode}
-``` {.sourceCode .python .code-with-copy}
+``` python
 # pipeline.py
 import pandas as pd
 
@@ -80,25 +56,19 @@ import pandas as pd
 
 print('job finished successfully')
 ```
-:::
 
 Make the `pipeline` available to the docker container
 
-::: {#cb5 .sourceCode}
-``` {.sourceCode .dockerfile .code-with-copy}
+``` dockerfile
 #...
 WORKDIR /app
 COPY pipeline.py pipeline.py
 #....
 ```
-:::
-:::::
 
-::::: {#get-a-bit-more-fancy .section .level3}
-### Get a bit more fancy {.anchored anchor-id="get-a-bit-more-fancy"}
+### Get a bit more fancy
 
-::: {#cb6 .sourceCode}
-``` {.sourceCode .python .code-with-copy}
+``` python
 # pipeline.py
 import sys
 import pandas as pd
@@ -114,29 +84,20 @@ day = sys.argv[1]
 
 print(f'job finished successfully {day}')
 ```
-:::
 
 Change the docker file so that the pipeline is run by the container.
 
-::: {#cb7 .sourceCode}
-``` {.sourceCode .dockerfile .code-with-copy}
+``` dockerfile
 #...
 ENTRYPOINT ["python", "pipeline.py"]
 #....
 ```
-:::
-:::::
-:::::::::
-::::::::::::::
 
-:::::::::::::::::::::::::: {#postgresql-in-docker .section .level1}
 # PostgreSQL in docker
 
-:::: {#run-container .section .level2}
-## Run container {.anchored anchor-id="run-container"}
+## Run container
 
-::: {#cb8 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 docker run -it --rm \
   -e POSTGRES_DB="ny_taxi" \
   -e POSTGRES_USER="root" \
@@ -145,41 +106,31 @@ docker run -it --rm \
   -p 5432:5432 \
   postgres:13
 ```
-:::
-::::
 
-:::: {#pgcli .section .level2}
-## `pgcli` {.anchored anchor-id="pgcli"}
+## `pgcli`
 
-::: {#cb9 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 pgcli -h localhost -p 5433 -u root -d ny_taxi
 ```
-:::
 
 See the [`ipynb`
 notebook](./2_postgresql_docker/postgresql_pandas.ipynb) for how to load
 the dataset to the PostgresSQL database.
-::::
 
-:::::: {#pgadmin .section .level2}
-## pgAdmin {.anchored anchor-id="pgadmin"}
+## pgAdmin
 
 GUI tool for working for PostgreSQL.
 
 In order to connect pgAdmin to Postgres, both containers have to be in
 the same network
 
-::: {#cb10 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 docker network create pg-network
 ```
-:::
 
 *Setup in docker*
 
-::: {#cb11 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 docker run -it \
   -p 127.0.0.1:8081:80 \
   -e PGADMIN_DEFAULT_EMAIL=user@domain.com \
@@ -188,12 +139,10 @@ docker run -it \
   --name=pgadmin \
   dpage/pgadmin4
 ```
-:::
 
 *Restart Postgres container* in the same network
 
-::: {#cb12 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 docker run -it --rm \
   -e POSTGRES_DB="ny_taxi" \
   -e POSTGRES_USER="root" \
@@ -204,28 +153,22 @@ docker run -it --rm \
   --name=pg-database \
   postgres:13
 ```
-:::
-::::::
 
-::::: {#data-ingestion-script .section .level2}
-## Data ingestion script {.anchored anchor-id="data-ingestion-script"}
+## Data ingestion script
 
 Convert `ipynb` to `.py` file
 
-::: {#cb13 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 jupyter nbconvert --to py ./postgresql_pandas.ipynb
 mv postgresql_pandas.py ingest_data.py
 ```
-:::
 
 Some clean up, and argparsing, see
 [here](./2_postgresql_docker/ingest_data.py)
 
 After deleting `yellow_taxi_data` from Postgres, run the python script
 
-::: {#cb14 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 URL="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
 
 python ingest_data.py \
@@ -237,16 +180,12 @@ python ingest_data.py \
   --table_name=yellow_taxi_data \
   --url=${URL}
 ```
-:::
-:::::
 
-::::: {#containerization-of-the-data-ingestion .section .level2}
-## Containerization of the data ingestion {.anchored anchor-id="containerization-of-the-data-ingestion"}
+## Containerization of the data ingestion
 
 Build the docker container for data ingestion
 
-::: {#cb15 .sourceCode}
-``` {.sourceCode .dockerfile .code-with-copy}
+``` dockerfile
 FROM python:3.9
 
 WORKDIR /app
@@ -256,13 +195,11 @@ RUN pip install pandas sqlalchemy psycopg2
 
 ENTRYPOINT [ "python", "ingest_data.py" ]
 ```
-:::
 
 Run the container in the `pg-network`, fails otherwise to find th
 Postgres server
 
-::: {#cb16 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 docker run -it \
   --network=pg-network \
   taxi_ingest:v001 \
@@ -274,25 +211,19 @@ docker run -it \
     --table_name=yellow_taxi_data \
     --url=${URL}
 ```
-:::
-:::::
 
-::: {#docker-compose---bringing-the-containers-together .section .level2}
-## Docker compose - Bringing the containers together {.anchored anchor-id="docker-compose---bringing-the-containers-together"}
+## Docker compose - Bringing the containers together
 
 see [docker-compose.yml](./2_postgresql_docker/docker-compose.yml)
-:::
 
-:::::::::: {#some-sql .section .level2}
-## Some SQL {.anchored anchor-id="some-sql"}
+## Some SQL
 
 Pull the zone lookup table to postgres using the data ingestion
 container
 
-remove `parse_dates` from `pipeline.py`
+-   [x] remove `parse_dates` from `pipeline.py`
 
-::: {#cb17 .sourceCode}
-``` {.sourceCode .bash .code-with-copy}
+``` bash
 URL="https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
 
 docker run -it \
@@ -306,14 +237,11 @@ docker run -it \
     --table_name=yellow_taxi_data \
     --url=${URL}
 ```
-:::
 
-:::::::: {#join-zones-and-trip-tables .section .level3}
-### Join zones and trip tables {.anchored anchor-id="join-zones-and-trip-tables"}
+### Join zones and trip tables
 
-:::: cell
-::: {#cb18 .sourceCode .cell-code}
-``` {.sourceCode .r .code-with-copy}
+::: cell
+``` {.r .cell-code}
 library(DBI)
 con <- DBI::dbConnect( 
                RPostgres::Postgres(),
@@ -325,14 +253,12 @@ con <- DBI::dbConnect(
             )
 ```
 :::
-::::
 
-::::: cell
-::: {#cb19 .sourceCode .cell-code}
-``` {.sourceCode .sql .code-with-copy}
+:::: cell
+``` {.sql .cell-code}
 --using cartesian product
 SELECT 
-  *
+  "VendorID", tpep_pickup_datetime
 FROM
   yellow_taxi_data t,
   --location pickup lpu
@@ -343,50 +269,23 @@ WHERE
 --selection on joining conditions
   t."PULocationID" = lpu."LocationID" AND
   t."DOLocationID" = ldo."LocationID"
-LIMIT 100
+LIMIT 10
 ```
-:::
 
 ::: cell-output-display
-  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  index     VendorID tpep_pickup_datetime   tpep_dropoff_datetime     passenger_count   trip_distance   RatecodeID store_and_fwd_flag     PULocationID   DOLocationID   payment_type   fare_amount   extra   mta_tax   tip_amount   tolls_amount   improvement_surcharge   total_amount   congestion_surcharge   index   LocationID Borough     Zone         service_zone     index   LocationID Borough     Zone        service_zone
-  ------- ---------- ---------------------- ----------------------- ----------------- --------------- ------------ -------------------- -------------- -------------- -------------- ------------- ------- --------- ------------ -------------- ----------------------- -------------- ---------------------- ------- ------------ ----------- ------------ -------------- ------- ------------ ----------- ----------- --------------
-  0                1 2021-01-01 00:30:10    2021-01-01 00:36:12                     1            2.10            1 N                               142             43              2           8.0     3.0       0.5         0.00              0                     0.3          11.80                    2.5     141          142 Manhattan   Lincoln      Yellow Zone         42           43 Manhattan   Central     Yellow Zone
-                                                                                                                                                                                                                                                                                                                                                Square East                                                  Park        
-
-  1                1 2021-01-01 00:51:20    2021-01-01 00:52:19                     1            0.20            1 N                               238            151              2           3.0     0.5       0.5         0.00              0                     0.3           4.30                    0.0     237          238 Manhattan   Upper West   Yellow Zone        150          151 Manhattan   Manhattan   Yellow Zone
-                                                                                                                                                                                                                                                                                                                                                Side North                                                   Valley      
-
-  2                1 2021-01-01 00:43:30    2021-01-01 01:11:06                     1           14.70            1 N                               132            165              1          42.0     0.5       0.5         8.65              0                     0.3          51.95                    0.0     131          132 Queens      JFK Airport  Airports           164          165 Brooklyn    Midwood     Boro Zone
-
-  3                1 2021-01-01 00:15:48    2021-01-01 00:31:01                     0           10.60            1 N                               138            132              1          29.0     0.5       0.5         6.05              0                     0.3          36.35                    0.0     137          138 Queens      LaGuardia    Airports           131          132 Queens      JFK Airport Airports
-                                                                                                                                                                                                                                                                                                                                                Airport                                                                  
-
-  4                2 2021-01-01 00:31:49    2021-01-01 00:48:21                     1            4.94            1 N                                68             33              1          16.5     0.5       0.5         4.06              0                     0.3          24.36                    2.5      67           68 Manhattan   East Chelsea Yellow Zone         32           33 Brooklyn    Brooklyn    Boro Zone
-                                                                                                                                                                                                                                                                                                                                                                                                             Heights     
-
-  5                1 2021-01-01 00:16:29    2021-01-01 00:24:30                     1            1.60            1 N                               224             68              1           8.0     3.0       0.5         2.35              0                     0.3          14.15                    2.5     223          224 Manhattan   Stuy         Yellow Zone         67           68 Manhattan   East        Yellow Zone
-                                                                                                                                                                                                                                                                                                                                                Town/Peter                                                   Chelsea     
-                                                                                                                                                                                                                                                                                                                                                Cooper                                                                   
-                                                                                                                                                                                                                                                                                                                                                Village                                                                  
-
-  6                1 2021-01-01 00:00:28    2021-01-01 00:17:28                     1            4.10            1 N                                95            157              2          16.0     0.5       0.5         0.00              0                     0.3          17.30                    0.0      94           95 Queens      Forest Hills Boro Zone          156          157 Queens      Maspeth     Boro Zone
-
-  7                1 2021-01-01 00:12:29    2021-01-01 00:30:34                     1            5.70            1 N                                90             40              2          18.0     3.0       0.5         0.00              0                     0.3          21.80                    2.5      89           90 Manhattan   Flatiron     Yellow Zone         39           40 Brooklyn    Carroll     Boro Zone
-                                                                                                                                                                                                                                                                                                                                                                                                             Gardens     
-
-  8                1 2021-01-01 00:39:16    2021-01-01 01:00:13                     1            9.10            1 N                                97            129              4          27.5     0.5       0.5         0.00              0                     0.3          28.80                    0.0      96           97 Brooklyn    Fort Greene  Boro Zone          128          129 Queens      Jackson     Boro Zone
-                                                                                                                                                                                                                                                                                                                                                                                                             Heights     
-
-  9                1 2021-01-01 00:26:12    2021-01-01 00:39:46                     2            2.70            1 N                               263            142              1          12.0     3.0       0.5         3.15              0                     0.3          18.95                    2.5     262          263 Manhattan   Yorkville    Yellow Zone        141          142 Manhattan   Lincoln     Yellow Zone
-                                                                                                                                                                                                                                                                                                                                                West                                                         Square East 
-  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    VendorID tpep_pickup_datetime
+  ---------- ----------------------
+           1 2021-01-01 00:30:10
+           1 2021-01-01 00:51:20
+           1 2021-01-01 00:43:30
+           1 2021-01-01 00:15:48
+           2 2021-01-01 00:31:49
+           1 2021-01-01 00:16:29
+           1 2021-01-01 00:00:28
+           1 2021-01-01 00:12:29
+           1 2021-01-01 00:39:16
+           1 2021-01-01 00:26:12
 
   : Displaying records 1 - 10
 :::
-:::::
-::::::::
-::::::::::
-::::::::::::::::::::::::::
-:::::::::::::::::::::::::::::::::::::::::::::
-::::::::::::::::::::::::::::::::::::::::::::::
+::::

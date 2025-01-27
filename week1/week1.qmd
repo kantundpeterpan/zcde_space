@@ -245,7 +245,7 @@ con <- DBI::dbConnect(
 ```{sql connection=con}
 --using cartesian product
 SELECT 
-  *
+  "VendorID", tpep_pickup_datetime
 FROM
   yellow_taxi_data t,
   --location pickup lpu
@@ -256,5 +256,5 @@ WHERE
 --selection on joining conditions
   t."PULocationID" = lpu."LocationID" AND
   t."DOLocationID" = ldo."LocationID"
-LIMIT 100
+LIMIT 10
 ```
