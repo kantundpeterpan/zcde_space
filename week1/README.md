@@ -508,3 +508,46 @@ LIMIT 10
 | 2021-01-01 |           11 |     2 |      41.30 |           5 |
 | 2021-01-01 |           12 |    13 |      26.16 |           3 |
 | 2021-01-01 |           13 |    94 |      76.78 |           6 |
+
+# Introduction to Terraform
+
+- Infrastructure as code
+- Terraform uses files to define resources and infrastructure
+- the then be used to deploy the defined infrastructure on a chosen
+  cloud providers
+
+## Terraform key commands
+
+- `init`
+
+  Get the needed provides
+
+- `plan`
+
+  lay out what is going to happen
+
+- `apply`
+
+  do it
+
+- `destroy`
+
+  bring all resources down
+
+### Main terraform setup
+
+see [main.tf](./3_intro_terraform/main.tf)
+
+- use and environment variable to the credentials for GCP
+
+``` bash
+export GOOGLE_CREDENTIALS='/home/ .... /.json'
+```
+
+- define resources
+
+- check with `terraform plan`
+
+- deploy with `terraform apply`
+
+- destroy with `terraform destroy`
