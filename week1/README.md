@@ -1,52 +1,76 @@
----
-author:
-- Heiner Atze
-authors:
-- Heiner Atze
-subtilte: Week 1 - Docker, GCP
-title: Data Engineering Zoomcamp
-toc-title: Table of contents
----
+:::::::::::::::::::::::::::::::::::::::::::::: {#quarto-content .page-columns .page-rows-contents .page-layout-article}
+::::::::::::::::::::::::::::::::::::::::::::: {#quarto-document-content .content role="main"}
+:::::::: {#title-block-header .quarto-title-block .default}
+::: quarto-title
+# Data Engineering Zoomcamp {#data-engineering-zoomcamp .title}
+:::
 
+:::::: quarto-title-meta
+<div>
+
+::: quarto-title-meta-heading
+Author
+:::
+
+::: quarto-title-meta-contents
+Heiner Atze
+:::
+
+</div>
+::::::
+::::::::
+
+:::::::::::::: {#introduction-to-docker .section .level1}
 # Introduction to docker
 
-## Docker setup
+:::::: {#docker-setup .section .level2}
+## Docker setup {.anchored anchor-id="docker-setup"}
 
 Setup up a Docker container based on the python image, use the entry
 point `bash` to install pandas.
 
-``` bash
+::: {#cb1 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 # On host
 docker run -it --entrypoint=bash python:3.9
 # Within docker
 pip install pandas 
 # etc. pp. ... this is not persistent
 ```
+:::
 
 Thus, let's create a Dockerfile
 
-``` dockerfile
+::: {#cb2 .sourceCode}
+``` {.sourceCode .dockerfile .code-with-copy}
 FROM python:3.9
 
 RUN pip install pandas
 
 ENTRYPOINT [ "bash" ]
 ```
+:::
 
 Use it to build the container
 
-``` bash
+::: {#cb3 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 # build from dockerfile
 docker build -t test:pandas .
 ```
+:::
+::::::
 
-## Build a toy pipeline
+::::::::: {#build-a-toy-pipeline .section .level2}
+## Build a toy pipeline {.anchored anchor-id="build-a-toy-pipeline"}
 
-### Create python script
+::::: {#create-python-script .section .level3}
+### Create python script {.anchored anchor-id="create-python-script"}
 
 Let's start to prepare a data pipeline.
 
-``` python
+::: {#cb4 .sourceCode}
+``` {.sourceCode .python .code-with-copy}
 # pipeline.py
 import pandas as pd
 
@@ -56,19 +80,25 @@ import pandas as pd
 
 print('job finished successfully')
 ```
+:::
 
 Make the `pipeline` available to the docker container
 
-``` dockerfile
+::: {#cb5 .sourceCode}
+``` {.sourceCode .dockerfile .code-with-copy}
 #...
 WORKDIR /app
 COPY pipeline.py pipeline.py
 #....
 ```
+:::
+:::::
 
-### Get a bit more fancy
+::::: {#get-a-bit-more-fancy .section .level3}
+### Get a bit more fancy {.anchored anchor-id="get-a-bit-more-fancy"}
 
-``` python
+::: {#cb6 .sourceCode}
+``` {.sourceCode .python .code-with-copy}
 # pipeline.py
 import sys
 import pandas as pd
@@ -84,20 +114,29 @@ day = sys.argv[1]
 
 print(f'job finished successfully {day}')
 ```
+:::
 
 Change the docker file so that the pipeline is run by the container.
 
-``` dockerfile
+::: {#cb7 .sourceCode}
+``` {.sourceCode .dockerfile .code-with-copy}
 #...
 ENTRYPOINT ["python", "pipeline.py"]
 #....
 ```
+:::
+:::::
+:::::::::
+::::::::::::::
 
+:::::::::::::::::::::::::: {#postgresql-in-docker .section .level1}
 # PostgreSQL in docker
 
-## Run container
+:::: {#run-container .section .level2}
+## Run container {.anchored anchor-id="run-container"}
 
-``` bash
+::: {#cb8 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 docker run -it --rm \
   -e POSTGRES_DB="ny_taxi" \
   -e POSTGRES_USER="root" \
@@ -106,31 +145,41 @@ docker run -it --rm \
   -p 5432:5432 \
   postgres:13
 ```
+:::
+::::
 
-## `pgcli`
+:::: {#pgcli .section .level2}
+## `pgcli` {.anchored anchor-id="pgcli"}
 
-``` bash
+::: {#cb9 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 pgcli -h localhost -p 5433 -u root -d ny_taxi
 ```
+:::
 
 See the [`ipynb`
 notebook](./2_postgresql_docker/postgresql_pandas.ipynb) for how to load
 the dataset to the PostgresSQL database.
+::::
 
-## pgAdmin
+:::::: {#pgadmin .section .level2}
+## pgAdmin {.anchored anchor-id="pgadmin"}
 
 GUI tool for working for PostgreSQL.
 
 In order to connect pgAdmin to Postgres, both containers have to be in
 the same network
 
-``` bash
+::: {#cb10 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 docker network create pg-network
 ```
+:::
 
 *Setup in docker*
 
-``` bash
+::: {#cb11 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 docker run -it \
   -p 127.0.0.1:8081:80 \
   -e PGADMIN_DEFAULT_EMAIL=user@domain.com \
@@ -139,10 +188,12 @@ docker run -it \
   --name=pgadmin \
   dpage/pgadmin4
 ```
+:::
 
 *Restart Postgres container* in the same network
 
-``` bash
+::: {#cb12 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 docker run -it --rm \
   -e POSTGRES_DB="ny_taxi" \
   -e POSTGRES_USER="root" \
@@ -153,22 +204,28 @@ docker run -it --rm \
   --name=pg-database \
   postgres:13
 ```
+:::
+::::::
 
-## Data ingestion script
+::::: {#data-ingestion-script .section .level2}
+## Data ingestion script {.anchored anchor-id="data-ingestion-script"}
 
 Convert `ipynb` to `.py` file
 
-``` bash
+::: {#cb13 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 jupyter nbconvert --to py ./postgresql_pandas.ipynb
 mv postgresql_pandas.py ingest_data.py
 ```
+:::
 
 Some clean up, and argparsing, see
 [here](./2_postgresql_docker/ingest_data.py)
 
 After deleting `yellow_taxi_data` from Postgres, run the python script
 
-``` bash
+::: {#cb14 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 URL="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
 
 python ingest_data.py \
@@ -180,12 +237,16 @@ python ingest_data.py \
   --table_name=yellow_taxi_data \
   --url=${URL}
 ```
+:::
+:::::
 
-## Containerization of the data ingestion
+::::: {#containerization-of-the-data-ingestion .section .level2}
+## Containerization of the data ingestion {.anchored anchor-id="containerization-of-the-data-ingestion"}
 
 Build the docker container for data ingestion
 
-``` dockerfile
+::: {#cb15 .sourceCode}
+``` {.sourceCode .dockerfile .code-with-copy}
 FROM python:3.9
 
 WORKDIR /app
@@ -195,11 +256,13 @@ RUN pip install pandas sqlalchemy psycopg2
 
 ENTRYPOINT [ "python", "ingest_data.py" ]
 ```
+:::
 
 Run the container in the `pg-network`, fails otherwise to find th
 Postgres server
 
-``` bash
+::: {#cb16 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 docker run -it \
   --network=pg-network \
   taxi_ingest:v001 \
@@ -211,19 +274,25 @@ docker run -it \
     --table_name=yellow_taxi_data \
     --url=${URL}
 ```
+:::
+:::::
 
-## Docker compose - Bringing the containers together
+::: {#docker-compose---bringing-the-containers-together .section .level2}
+## Docker compose - Bringing the containers together {.anchored anchor-id="docker-compose---bringing-the-containers-together"}
 
 see [docker-compose.yml](./2_postgresql_docker/docker-compose.yml)
+:::
 
-## Some SQL
+:::::::::: {#some-sql .section .level2}
+## Some SQL {.anchored anchor-id="some-sql"}
 
 Pull the zone lookup table to postgres using the data ingestion
 container
 
--   [x] remove `parse_dates` from `pipeline.py`
+remove `parse_dates` from `pipeline.py`
 
-``` bash
+::: {#cb17 .sourceCode}
+``` {.sourceCode .bash .code-with-copy}
 URL="https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
 
 docker run -it \
@@ -237,11 +306,14 @@ docker run -it \
     --table_name=yellow_taxi_data \
     --url=${URL}
 ```
+:::
 
-### Join zones and trip tables
+:::::::: {#join-zones-and-trip-tables .section .level3}
+### Join zones and trip tables {.anchored anchor-id="join-zones-and-trip-tables"}
 
-::: cell
-``` {.r .cell-code}
+:::: cell
+::: {#cb18 .sourceCode .cell-code}
+``` {.sourceCode .r .code-with-copy}
 library(DBI)
 con <- DBI::dbConnect( 
                RPostgres::Postgres(),
@@ -253,9 +325,11 @@ con <- DBI::dbConnect(
             )
 ```
 :::
+::::
 
-:::: cell
-``` {.sql .cell-code}
+::::: cell
+::: {#cb19 .sourceCode .cell-code}
+``` {.sourceCode .sql .code-with-copy}
 --using cartesian product
 SELECT 
   *
@@ -271,6 +345,7 @@ WHERE
   t."DOLocationID" = ldo."LocationID"
 LIMIT 100
 ```
+:::
 
 ::: cell-output-display
   -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -309,4 +384,9 @@ LIMIT 100
 
   : Displaying records 1 - 10
 :::
-::::
+:::::
+::::::::
+::::::::::
+::::::::::::::::::::::::::
+:::::::::::::::::::::::::::::::::::::::::::::
+::::::::::::::::::::::::::::::::::::::::::::::
