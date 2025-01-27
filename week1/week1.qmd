@@ -234,11 +234,11 @@ docker run -it \
 library(DBI)
 con <- DBI::dbConnect( 
                RPostgres::Postgres(),
-               dbname = "pitchfork_reviews", 
+               dbname = "ny_taxi", 
                host = "localhost", 
-               port = "5432", 
-               user = "postgres",
-               password = "postgres"
+               port = "5433", 
+               user = "root",
+               password = "root"
             )
 ```
 
@@ -256,4 +256,5 @@ WHERE
 --selection on joining conditions
   t."PULocationID" = lpu."LocationID" AND
   t."DOLocationID" = ldo."LocationID"
+LIMIT 100
 ```

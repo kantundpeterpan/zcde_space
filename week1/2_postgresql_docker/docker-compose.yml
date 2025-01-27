@@ -9,7 +9,7 @@ services:
     volumes:
       - "./ny_taxi_postgres_data:/var/lib/postgresql/data:rw"
     ports:
-      - "127.0.0.1:5433:5342"
+      - "127.0.0.1:5433:5432"
   
   pgadmin:
     image: dpage/pgadmin4
