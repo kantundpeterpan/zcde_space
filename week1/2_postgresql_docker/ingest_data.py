@@ -18,7 +18,8 @@ def main(params):
 
     df_iter = pd.read_csv(url,
                     iterator = True, chunksize=100000,
-                    parse_dates=['tpep_pickup_datetime', 'tpep_dropoff_datetime'])
+                    # parse_dates=['tpep_pickup_datetime', 'tpep_dropoff_datetime']
+                    )
 
     while (tmp_df := next(df_iter, None)) is not None:
 

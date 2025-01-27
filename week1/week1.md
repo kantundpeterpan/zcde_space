@@ -196,7 +196,7 @@ docker run -it \
   taxi_ingest:v001 \
     --user=root \
     --password=root \
-    --host=pg=database \
+    --host=pg-database \
     --port=5432 \
     --db=ny_taxi \
     --table_name=yellow_taxi_data \
@@ -204,3 +204,26 @@ docker run -it \
 ```
 
 ## Docker compose - Bringing the containers together
+
+see [docker-compose.yml](./2_postgresql_docker/docker-compose.yml)
+
+## Some SQL
+
+Pull the zone lookup table to postgres using the data ingestion container
+
+- [x] remove `parse_dates` from `pipeline.py`
+
+``` bash
+URL="https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+
+docker run -it \
+  --network=pg-network \
+  taxi_ingest:v001 \
+    --user=root \
+    --password=root \
+    --host=pg-database \
+    --port=5432 \
+    --db=ny_taxi \
+    --table_name=yellow_taxi_data \
+    --url=${URL}
+```
