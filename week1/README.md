@@ -1,14 +1,19 @@
 ---
-title: Data Engineering Zoomcamp
+author:
+- Heiner Atze
+authors:
+- Heiner Atze
 subtilte: Week 1 - Docker, GCP
-author: Heiner Atze
+title: Data Engineering Zoomcamp
+toc-title: Table of contents
 ---
 
 # Introduction to docker
 
 ## Docker setup
 
-Setup up a Docker container based on the python image, use the entry point `bash` to install pandas.
+Setup up a Docker container based on the python image, use the entry
+point `bash` to install pandas.
 
 ``` bash
 # On host
@@ -108,14 +113,16 @@ docker run -it --rm \
 pgcli -h localhost -p 5433 -u root -d ny_taxi
 ```
 
-See the [`ipynb` notebook](./2_postgresql_docker/postgresql_pandas.ipynb) for how to load the dataset to the PostgresSQL database.
+See the [`ipynb`
+notebook](./2_postgresql_docker/postgresql_pandas.ipynb) for how to load
+the dataset to the PostgresSQL database.
 
 ## pgAdmin
 
 GUI tool for working for PostgreSQL.
 
-
-In order to connect pgAdmin to Postgres, both containers have to be in the same network
+In order to connect pgAdmin to Postgres, both containers have to be in
+the same network
 
 ``` bash
 docker network create pg-network
@@ -151,16 +158,17 @@ docker run -it --rm \
 
 Convert `ipynb` to `.py` file
 
-```bash
+``` bash
 jupyter nbconvert --to py ./postgresql_pandas.ipynb
 mv postgresql_pandas.py ingest_data.py
 ```
 
-Some clean up, and argparsing, see [here](./2_postgresql_docker/ingest_data.py)
+Some clean up, and argparsing, see
+[here](./2_postgresql_docker/ingest_data.py)
 
 After deleting `yellow_taxi_data` from Postgres, run the python script
 
-```bash
+``` bash
 URL="https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow/yellow_tripdata_2021-01.csv.gz"
 
 python ingest_data.py \
@@ -177,7 +185,7 @@ python ingest_data.py \
 
 Build the docker container for data ingestion
 
-```dockerfile
+``` dockerfile
 FROM python:3.9
 
 WORKDIR /app
@@ -188,9 +196,10 @@ RUN pip install pandas sqlalchemy psycopg2
 ENTRYPOINT [ "python", "ingest_data.py" ]
 ```
 
-Run the container in the `pg-network`, fails otherwise to find th Postgres server
+Run the container in the `pg-network`, fails otherwise to find th
+Postgres server
 
-```bash
+``` bash
 docker run -it \
   --network=pg-network \
   taxi_ingest:v001 \
@@ -209,9 +218,10 @@ see [docker-compose.yml](./2_postgresql_docker/docker-compose.yml)
 
 ## Some SQL
 
-Pull the zone lookup table to postgres using the data ingestion container
+Pull the zone lookup table to postgres using the data ingestion
+container
 
-- [x] remove `parse_dates` from `pipeline.py`
+-   [x] remove `parse_dates` from `pipeline.py`
 
 ``` bash
 URL="https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
@@ -230,19 +240,22 @@ docker run -it \
 
 ### Join zones and trip tables
 
-```{r}
+::: cell
+``` {.r .cell-code}
 library(DBI)
 con <- DBI::dbConnect( 
                RPostgres::Postgres(),
-               dbname = "pitchfork_reviews", 
+               dbname = "ny_taxi", 
                host = "localhost", 
-               port = "5432", 
-               user = "postgres",
-               password = "postgres"
+               port = "5433", 
+               user = "root",
+               password = "root"
             )
 ```
+:::
 
-```{sql connection=con}
+:::: cell
+``` {.sql .cell-code}
 --using cartesian product
 SELECT 
   *
@@ -256,4 +269,44 @@ WHERE
 --selection on joining conditions
   t."PULocationID" = lpu."LocationID" AND
   t."DOLocationID" = ldo."LocationID"
+LIMIT 100
 ```
+
+::: cell-output-display
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  index     VendorID tpep_pickup_datetime   tpep_dropoff_datetime     passenger_count   trip_distance   RatecodeID store_and_fwd_flag     PULocationID   DOLocationID   payment_type   fare_amount   extra   mta_tax   tip_amount   tolls_amount   improvement_surcharge   total_amount   congestion_surcharge   index   LocationID Borough     Zone         service_zone     index   LocationID Borough     Zone        service_zone
+  ------- ---------- ---------------------- ----------------------- ----------------- --------------- ------------ -------------------- -------------- -------------- -------------- ------------- ------- --------- ------------ -------------- ----------------------- -------------- ---------------------- ------- ------------ ----------- ------------ -------------- ------- ------------ ----------- ----------- --------------
+  0                1 2021-01-01 00:30:10    2021-01-01 00:36:12                     1            2.10            1 N                               142             43              2           8.0     3.0       0.5         0.00              0                     0.3          11.80                    2.5     141          142 Manhattan   Lincoln      Yellow Zone         42           43 Manhattan   Central     Yellow Zone
+                                                                                                                                                                                                                                                                                                                                                Square East                                                  Park        
+
+  1                1 2021-01-01 00:51:20    2021-01-01 00:52:19                     1            0.20            1 N                               238            151              2           3.0     0.5       0.5         0.00              0                     0.3           4.30                    0.0     237          238 Manhattan   Upper West   Yellow Zone        150          151 Manhattan   Manhattan   Yellow Zone
+                                                                                                                                                                                                                                                                                                                                                Side North                                                   Valley      
+
+  2                1 2021-01-01 00:43:30    2021-01-01 01:11:06                     1           14.70            1 N                               132            165              1          42.0     0.5       0.5         8.65              0                     0.3          51.95                    0.0     131          132 Queens      JFK Airport  Airports           164          165 Brooklyn    Midwood     Boro Zone
+
+  3                1 2021-01-01 00:15:48    2021-01-01 00:31:01                     0           10.60            1 N                               138            132              1          29.0     0.5       0.5         6.05              0                     0.3          36.35                    0.0     137          138 Queens      LaGuardia    Airports           131          132 Queens      JFK Airport Airports
+                                                                                                                                                                                                                                                                                                                                                Airport                                                                  
+
+  4                2 2021-01-01 00:31:49    2021-01-01 00:48:21                     1            4.94            1 N                                68             33              1          16.5     0.5       0.5         4.06              0                     0.3          24.36                    2.5      67           68 Manhattan   East Chelsea Yellow Zone         32           33 Brooklyn    Brooklyn    Boro Zone
+                                                                                                                                                                                                                                                                                                                                                                                                             Heights     
+
+  5                1 2021-01-01 00:16:29    2021-01-01 00:24:30                     1            1.60            1 N                               224             68              1           8.0     3.0       0.5         2.35              0                     0.3          14.15                    2.5     223          224 Manhattan   Stuy         Yellow Zone         67           68 Manhattan   East        Yellow Zone
+                                                                                                                                                                                                                                                                                                                                                Town/Peter                                                   Chelsea     
+                                                                                                                                                                                                                                                                                                                                                Cooper                                                                   
+                                                                                                                                                                                                                                                                                                                                                Village                                                                  
+
+  6                1 2021-01-01 00:00:28    2021-01-01 00:17:28                     1            4.10            1 N                                95            157              2          16.0     0.5       0.5         0.00              0                     0.3          17.30                    0.0      94           95 Queens      Forest Hills Boro Zone          156          157 Queens      Maspeth     Boro Zone
+
+  7                1 2021-01-01 00:12:29    2021-01-01 00:30:34                     1            5.70            1 N                                90             40              2          18.0     3.0       0.5         0.00              0                     0.3          21.80                    2.5      89           90 Manhattan   Flatiron     Yellow Zone         39           40 Brooklyn    Carroll     Boro Zone
+                                                                                                                                                                                                                                                                                                                                                                                                             Gardens     
+
+  8                1 2021-01-01 00:39:16    2021-01-01 01:00:13                     1            9.10            1 N                                97            129              4          27.5     0.5       0.5         0.00              0                     0.3          28.80                    0.0      96           97 Brooklyn    Fort Greene  Boro Zone          128          129 Queens      Jackson     Boro Zone
+                                                                                                                                                                                                                                                                                                                                                                                                             Heights     
+
+  9                1 2021-01-01 00:26:12    2021-01-01 00:39:46                     2            2.70            1 N                               263            142              1          12.0     3.0       0.5         3.15              0                     0.3          18.95                    2.5     262          263 Manhattan   Yorkville    Yellow Zone        141          142 Manhattan   Lincoln     Yellow Zone
+                                                                                                                                                                                                                                                                                                                                                West                                                         Square East 
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+  : Displaying records 1 - 10
+:::
+::::
