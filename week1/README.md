@@ -1,12 +1,5 @@
----
-author:
-- Heiner Atze
-authors:
-- Heiner Atze
-subtilte: Week 1 - Docker, GCP
-title: Data Engineering Zoomcamp
-toc-title: Table of contents
----
+# Data Engineering Zoomcamp
+Heiner Atze
 
 # Introduction to docker
 
@@ -23,7 +16,7 @@ pip install pandas
 # etc. pp. ... this is not persistent
 ```
 
-Thus, let's create a Dockerfile
+Thus, let’s create a Dockerfile
 
 ``` dockerfile
 FROM python:3.9
@@ -44,7 +37,7 @@ docker build -t test:pandas .
 
 ### Create python script
 
-Let's start to prepare a data pipeline.
+Let’s start to prepare a data pipeline.
 
 ``` python
 # pipeline.py
@@ -221,7 +214,7 @@ see [docker-compose.yml](./2_postgresql_docker/docker-compose.yml)
 Pull the zone lookup table to postgres using the data ingestion
 container
 
--   [x] remove `parse_dates` from `pipeline.py`
+- [x] remove `parse_dates` from `pipeline.py`
 
 ``` bash
 URL="https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
@@ -240,8 +233,7 @@ docker run -it \
 
 ### Join zones and trip tables
 
-::: cell
-``` {.r .cell-code}
+``` r
 library(DBI)
 con <- DBI::dbConnect( 
                RPostgres::Postgres(),
@@ -252,10 +244,8 @@ con <- DBI::dbConnect(
                password = "root"
             )
 ```
-:::
 
-:::: cell
-``` {.sql .cell-code}
+``` sql
 --using cartesian product
 SELECT 
   "VendorID", tpep_pickup_datetime
@@ -272,20 +262,15 @@ WHERE
 LIMIT 10
 ```
 
-::: cell-output-display
-    VendorID tpep_pickup_datetime
-  ---------- ----------------------
-           1 2021-01-01 00:30:10
-           1 2021-01-01 00:51:20
-           1 2021-01-01 00:43:30
-           1 2021-01-01 00:15:48
-           2 2021-01-01 00:31:49
-           1 2021-01-01 00:16:29
-           1 2021-01-01 00:00:28
-           1 2021-01-01 00:12:29
-           1 2021-01-01 00:39:16
-           1 2021-01-01 00:26:12
-
-  : Displaying records 1 - 10
-:::
-::::
+| VendorID | tpep_pickup_datetime |
+|---------:|:---------------------|
+|        1 | 2021-01-01 00:30:10  |
+|        1 | 2021-01-01 00:51:20  |
+|        1 | 2021-01-01 00:43:30  |
+|        1 | 2021-01-01 00:15:48  |
+|        2 | 2021-01-01 00:31:49  |
+|        1 | 2021-01-01 00:16:29  |
+|        1 | 2021-01-01 00:00:28  |
+|        1 | 2021-01-01 00:12:29  |
+|        1 | 2021-01-01 00:39:16  |
+|        1 | 2021-01-01 00:26:12  |

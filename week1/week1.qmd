@@ -242,7 +242,9 @@ con <- DBI::dbConnect(
             )
 ```
 
-```{sql connection=con}
+```{sql}
+--| connection: con
+--| output.var: "results"
 --using cartesian product
 SELECT 
   "VendorID", tpep_pickup_datetime
@@ -257,4 +259,10 @@ WHERE
   t."PULocationID" = lpu."LocationID" AND
   t."DOLocationID" = ldo."LocationID"
 LIMIT 10
+```
+
+
+```{r}
+#| echo: false
+knitr::kable(results, format = "pipe")
 ```
