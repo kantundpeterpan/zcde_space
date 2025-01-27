@@ -379,7 +379,7 @@ FROM
 knitr::kable(results, format = "pipe")
 ```
 
-*Double check the checks*
+*Create some trips that reference an unknown location*
 
 - Choose a location from the `zones` table
 
@@ -436,6 +436,29 @@ FROM
 knitr::kable(results, format = "pipe")
 ```
 
+- use a `LEFT JOIN` to return all trips irrespective of whether the `LocationID` is referenced in `zones`
+
+```{sql}
+--| connection: con
+--| output.var: "results"
+SELECT 
+  t.tpep_pickup_datetime,
+  t.tpep_dropoff_datetime,
+  lpu."Zone" || ' / ' || lpu."Borough" as pickup_loc,
+  ldo."Zone" || ' / ' || ldo."Borough" as dropoff_loc
+FROM
+  yellow_taxi_data t LEFT JOIN zones lpu
+    ON t."PULocationID" = lpu."LocationID"
+  LEFT JOIN zones ldo
+    on t."DOLocationID" = ldo."LocationID"
+LIMIT 10
+```
+
+```{r}
+#| echo: false
+knitr::kable(results, format = "pipe")
+```
+
 - put the location back
 
 ```{sql}
@@ -443,3 +466,32 @@ knitr::kable(results, format = "pipe")
 INSERT INTO zones (index, "LocationID", "Borough", "Zone", service_zone)
   VALUES(141, 142, 'Manhattan', 'Lincoln Square East', 'Yellow Zone')
 ```
+
+## Count trips per day
+
+```{sql}
+--| connection: con
+--| output.var: "results"
+SELECT 
+  -- DATE_TRUNC('DAY', t.tpep_dropoff_datetime) as day
+  CAST(t.tpep_dropoff_datetime AS DATE) as "day",
+  "DOLocationID",
+  COUNT(1) as "count",
+  MAX(total_amount) as max_amount,
+  MAX(passenger_count) max_no_pass
+FROM
+  yellow_taxi_data t
+WHERE EXTRACT(YEAR FROM t.tpep_dropoff_datetime) = 2021
+GROUP BY
+  -- CAST(t.tpep_dropoff_datetime AS DATE)
+  1,2
+ORDER BY "day" ASC, "DOLocationID" ASC
+LIMIT 10
+```
+
+```{r}
+#| echo: false
+knitr::kable(results, format = "pipe")
+```
+
+# Introduction to Google Cloud Platform

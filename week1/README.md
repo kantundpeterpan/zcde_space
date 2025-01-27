@@ -392,7 +392,7 @@ FROM
 |-------------------------:|
 |                        0 |
 
-*Double check the checks*
+*Create some trips that reference an unknown location*
 
 - Choose a location from the `zones` table
 
@@ -439,9 +439,72 @@ FROM
 |-------------------------:|
 |                    77846 |
 
+- use a `LEFT JOIN` to return all trips irrespective of whether the
+  `LocationID` is referenced in `zones`
+
+``` sql
+SELECT 
+  t.tpep_pickup_datetime,
+  t.tpep_dropoff_datetime,
+  lpu."Zone" || ' / ' || lpu."Borough" as pickup_loc,
+  ldo."Zone" || ' / ' || ldo."Borough" as dropoff_loc
+FROM
+  yellow_taxi_data t LEFT JOIN zones lpu
+    ON t."PULocationID" = lpu."LocationID"
+  LEFT JOIN zones ldo
+    on t."DOLocationID" = ldo."LocationID"
+LIMIT 10
+```
+
+| tpep_pickup_datetime | tpep_dropoff_datetime | pickup_loc | dropoff_loc |
+|:---|:---|:---|:---|
+| 2021-01-01 00:30:10 | 2021-01-01 00:36:12 | NA | Central Park / Manhattan |
+| 2021-01-01 00:51:20 | 2021-01-01 00:52:19 | Upper West Side North / Manhattan | Manhattan Valley / Manhattan |
+| 2021-01-01 00:43:30 | 2021-01-01 01:11:06 | JFK Airport / Queens | Midwood / Brooklyn |
+| 2021-01-01 00:15:48 | 2021-01-01 00:31:01 | LaGuardia Airport / Queens | JFK Airport / Queens |
+| 2021-01-01 00:31:49 | 2021-01-01 00:48:21 | East Chelsea / Manhattan | Brooklyn Heights / Brooklyn |
+| 2021-01-01 00:16:29 | 2021-01-01 00:24:30 | Stuy Town/Peter Cooper Village / Manhattan | East Chelsea / Manhattan |
+| 2021-01-01 00:00:28 | 2021-01-01 00:17:28 | Forest Hills / Queens | Maspeth / Queens |
+| 2021-01-01 00:12:29 | 2021-01-01 00:30:34 | Flatiron / Manhattan | Carroll Gardens / Brooklyn |
+| 2021-01-01 00:39:16 | 2021-01-01 01:00:13 | Fort Greene / Brooklyn | Jackson Heights / Queens |
+| 2021-01-01 00:26:12 | 2021-01-01 00:39:46 | Yorkville West / Manhattan | NA |
+
 - put the location back
 
 ``` sql
 INSERT INTO zones (index, "LocationID", "Borough", "Zone", service_zone)
   VALUES(141, 142, 'Manhattan', 'Lincoln Square East', 'Yellow Zone')
 ```
+
+## Count trips per day
+
+``` sql
+SELECT 
+  -- DATE_TRUNC('DAY', t.tpep_dropoff_datetime) as day
+  CAST(t.tpep_dropoff_datetime AS DATE) as "day",
+  "DOLocationID",
+  COUNT(1) as "count",
+  MAX(total_amount) as max_amount,
+  MAX(passenger_count) max_no_pass
+FROM
+  yellow_taxi_data t
+WHERE EXTRACT(YEAR FROM t.tpep_dropoff_datetime) = 2021
+GROUP BY
+  -- CAST(t.tpep_dropoff_datetime AS DATE)
+  1,2
+ORDER BY "day" ASC, "DOLocationID" ASC
+LIMIT 10
+```
+
+| day        | DOLocationID | count | max_amount | max_no_pass |
+|:-----------|-------------:|------:|-----------:|------------:|
+| 2021-01-01 |            1 |    29 |     147.30 |           6 |
+| 2021-01-01 |            3 |    11 |      70.80 |           3 |
+| 2021-01-01 |            4 |   149 |      66.36 |           6 |
+| 2021-01-01 |            6 |     1 |      65.92 |           4 |
+| 2021-01-01 |            7 |   126 |      53.75 |           6 |
+| 2021-01-01 |            9 |     6 |      42.80 |           1 |
+| 2021-01-01 |           10 |    44 |      68.10 |           6 |
+| 2021-01-01 |           11 |     2 |      41.30 |           5 |
+| 2021-01-01 |           12 |    13 |      26.16 |           3 |
+| 2021-01-01 |           13 |    94 |      76.78 |           6 |
