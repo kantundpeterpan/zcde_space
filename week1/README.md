@@ -233,6 +233,13 @@ docker run -it \
 
 ### Join zones and trip tables
 
+------------------------------------------------------------------------
+
+<details>
+<summary>
+Setup quarto SQL connection
+</summary>
+
 ``` r
 library(DBI)
 con <- DBI::dbConnect( 
@@ -244,6 +251,10 @@ con <- DBI::dbConnect(
                password = "root"
             )
 ```
+
+</details>
+
+------------------------------------------------------------------------
 
 ``` sql
 --using cartesian product

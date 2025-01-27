@@ -234,6 +234,8 @@ docker run -it \
 
 ### Join zones and trip tables
 
+---
+
 <details>
 <summary>Setup quarto SQL connection</summary>
 
@@ -250,6 +252,8 @@ con <- DBI::dbConnect(
 ```
 
 </details>
+
+---
 
 ```{sql}
 --| connection: con
