@@ -1,6 +1,7 @@
 week1/2_postgresql_docker/ny_taxi_postgres_data/
 zcde_space.code-workspace
 week1/3_intro_terraform/workspaceaddon-436615-4bcf737409b7.json
+*/*_cache
 
 # Local .terraform directories
 **/.terraform/*
