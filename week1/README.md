@@ -248,7 +248,7 @@ con <- DBI::dbConnect(
 ``` sql
 --using cartesian product
 SELECT 
-  "VendorID", tpep_pickup_datetime
+  *
 FROM
   yellow_taxi_data t,
   --location pickup lpu
@@ -262,15 +262,15 @@ WHERE
 LIMIT 10
 ```
 
-| VendorID | tpep_pickup_datetime |
-|---------:|:---------------------|
-|        1 | 2021-01-01 00:30:10  |
-|        1 | 2021-01-01 00:51:20  |
-|        1 | 2021-01-01 00:43:30  |
-|        1 | 2021-01-01 00:15:48  |
-|        2 | 2021-01-01 00:31:49  |
-|        1 | 2021-01-01 00:16:29  |
-|        1 | 2021-01-01 00:00:28  |
-|        1 | 2021-01-01 00:12:29  |
-|        1 | 2021-01-01 00:39:16  |
-|        1 | 2021-01-01 00:26:12  |
+| index | VendorID | tpep_pickup_datetime | tpep_dropoff_datetime | passenger_count | trip_distance | RatecodeID | store_and_fwd_flag | PULocationID | DOLocationID | payment_type | fare_amount | extra | mta_tax | tip_amount | tolls_amount | improvement_surcharge | total_amount | congestion_surcharge | index | LocationID | Borough | Zone | service_zone | index | LocationID | Borough | Zone | service_zone |
+|---:|---:|:---|:---|---:|---:|---:|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|:---|:---|:---|---:|---:|:---|:---|:---|
+| 0 | 1 | 2021-01-01 00:30:10 | 2021-01-01 00:36:12 | 1 | 2.10 | 1 | N | 142 | 43 | 2 | 8.0 | 3.0 | 0.5 | 0.00 | 0 | 0.3 | 11.80 | 2.5 | 141 | 142 | Manhattan | Lincoln Square East | Yellow Zone | 42 | 43 | Manhattan | Central Park | Yellow Zone |
+| 1 | 1 | 2021-01-01 00:51:20 | 2021-01-01 00:52:19 | 1 | 0.20 | 1 | N | 238 | 151 | 2 | 3.0 | 0.5 | 0.5 | 0.00 | 0 | 0.3 | 4.30 | 0.0 | 237 | 238 | Manhattan | Upper West Side North | Yellow Zone | 150 | 151 | Manhattan | Manhattan Valley | Yellow Zone |
+| 2 | 1 | 2021-01-01 00:43:30 | 2021-01-01 01:11:06 | 1 | 14.70 | 1 | N | 132 | 165 | 1 | 42.0 | 0.5 | 0.5 | 8.65 | 0 | 0.3 | 51.95 | 0.0 | 131 | 132 | Queens | JFK Airport | Airports | 164 | 165 | Brooklyn | Midwood | Boro Zone |
+| 3 | 1 | 2021-01-01 00:15:48 | 2021-01-01 00:31:01 | 0 | 10.60 | 1 | N | 138 | 132 | 1 | 29.0 | 0.5 | 0.5 | 6.05 | 0 | 0.3 | 36.35 | 0.0 | 137 | 138 | Queens | LaGuardia Airport | Airports | 131 | 132 | Queens | JFK Airport | Airports |
+| 4 | 2 | 2021-01-01 00:31:49 | 2021-01-01 00:48:21 | 1 | 4.94 | 1 | N | 68 | 33 | 1 | 16.5 | 0.5 | 0.5 | 4.06 | 0 | 0.3 | 24.36 | 2.5 | 67 | 68 | Manhattan | East Chelsea | Yellow Zone | 32 | 33 | Brooklyn | Brooklyn Heights | Boro Zone |
+| 5 | 1 | 2021-01-01 00:16:29 | 2021-01-01 00:24:30 | 1 | 1.60 | 1 | N | 224 | 68 | 1 | 8.0 | 3.0 | 0.5 | 2.35 | 0 | 0.3 | 14.15 | 2.5 | 223 | 224 | Manhattan | Stuy Town/Peter Cooper Village | Yellow Zone | 67 | 68 | Manhattan | East Chelsea | Yellow Zone |
+| 6 | 1 | 2021-01-01 00:00:28 | 2021-01-01 00:17:28 | 1 | 4.10 | 1 | N | 95 | 157 | 2 | 16.0 | 0.5 | 0.5 | 0.00 | 0 | 0.3 | 17.30 | 0.0 | 94 | 95 | Queens | Forest Hills | Boro Zone | 156 | 157 | Queens | Maspeth | Boro Zone |
+| 7 | 1 | 2021-01-01 00:12:29 | 2021-01-01 00:30:34 | 1 | 5.70 | 1 | N | 90 | 40 | 2 | 18.0 | 3.0 | 0.5 | 0.00 | 0 | 0.3 | 21.80 | 2.5 | 89 | 90 | Manhattan | Flatiron | Yellow Zone | 39 | 40 | Brooklyn | Carroll Gardens | Boro Zone |
+| 8 | 1 | 2021-01-01 00:39:16 | 2021-01-01 01:00:13 | 1 | 9.10 | 1 | N | 97 | 129 | 4 | 27.5 | 0.5 | 0.5 | 0.00 | 0 | 0.3 | 28.80 | 0.0 | 96 | 97 | Brooklyn | Fort Greene | Boro Zone | 128 | 129 | Queens | Jackson Heights | Boro Zone |
+| 9 | 1 | 2021-01-01 00:26:12 | 2021-01-01 00:39:46 | 2 | 2.70 | 1 | N | 263 | 142 | 1 | 12.0 | 3.0 | 0.5 | 3.15 | 0 | 0.3 | 18.95 | 2.5 | 262 | 263 | Manhattan | Yorkville West | Yellow Zone | 141 | 142 | Manhattan | Lincoln Square East | Yellow Zone |

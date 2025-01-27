@@ -2,6 +2,10 @@
 title: Data Engineering Zoomcamp
 subtilte: Week 1 - Docker, GCP
 author: Heiner Atze
+format:
+  gfm:
+    output-ext: "md"
+    output-file: "README"
 ---
 
 # Introduction to docker
@@ -247,7 +251,7 @@ con <- DBI::dbConnect(
 --| output.var: "results"
 --using cartesian product
 SELECT 
-  "VendorID", tpep_pickup_datetime
+  *
 FROM
   yellow_taxi_data t,
   --location pickup lpu
