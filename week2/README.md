@@ -1,0 +1,91 @@
+# Week 2 - Workflow orchestration
+Heiner Atze
+
+# Introduction to Workflow orchestration in kestra
+
+This is a breakdown of the contents of the
+[`02_postgres_taxi.yaml`](https://github.com/DataTalksClub/data-engineering-zoomcamp/blob/main/02-workflow-orchestration/flows/02_postgres_taxi_scheduled.yaml)
+flow.
+
+## Input parameters
+
+``` yaml
+inputs:
+  - id: taxi
+      type: SELECT
+      displayName: Select taxi type
+      values: [yellow, green]
+      defaults: yellow
+```
+
+Possible values for the `type` of the input parameters are : `STRING`,
+`INT`, `FLOAT`, `BOOLEAN`, `DATETIME`, `DATE`, `TIME`, `DURATION`,
+`SELECT`, `MULTISELECT`, `ARRAY`, `JSON`, `YAML`, `FILE`, `URI`,
+`SECRET`.
+
+## Variable definition based on input parameters
+
+``` yaml
+variables:
+  file: "{{inputs.taxi}}_tripdata_{{inputs.year}}-{{inputs.month}}.csv"
+  staging_table: "public.{{inputs.taxi}}_tripdata_staging"
+  table: "public.{{inputs.taxi}}_tripdata"
+  data: "{{outputs.extract.outputFiles[inputs.taxi ~ '_tripdata_' ~ inputs.year ~ '-' ~ inputs.month ~ '.csv']}}"
+```
+
+`inputs` can be used in string literals by wrappping them in `{{}}`. The
+`~` operator concatenates strings.
+
+A detailed look at the `data` field:
+
+``` yaml
+data: "{{'direct.outputFiles[inputs.taxi ~ '_tripdata_' ~ inputs.year ~ '-' ~ inputs.month ~ '.csv']'}}"
+```
+
+**Path Construction Elements**
+
+- `direct.outputFiles` references the output files from a direct storage
+  location
+- Square bracket notation `[]` is used to access a specific file
+- The expression inside the brackets builds the filename dynamically
+
+**String Concatenation**
+
+- The tilde operator `~` joins multiple string components:
+  - `inputs.taxi` (taxi type)
+  - `'_tripdata_'` (static text)
+  - `inputs.year` (year value)
+  - `'-'` (hyphen separator)
+  - `inputs.month` (month value)
+  - `'.csv'` (file extension)
+
+This field constructs a path to access a specific CSV file in Kestra’s
+storage system, combining input variables and static text to form the
+complete filename. The resulting path can then be used to reference the
+file in subsequent tasks or operations.
+
+## Tasks
+
+``` yaml
+tasks:
+  tasks:
+  - id: set_label
+    type: io.kestra.plugin.core.execution.Labels
+    labels:
+      file: "{{render(vars.file)}}"
+      taxi: "{{inputs.taxi}}"
+```
+
+So far so good. An interesting point here is the `render(vars.file)` The
+`render()` function is crucial here because:
+
+- It ensures that any expressions inside the `vars.file` variable are
+  properly evaluated at runtime
+- Without the `render()` function, any expressions inside the variable
+  would be treated as plain text rather than being evaluated
+- This is particularly important when the variable contains dynamic
+  content or expressions that need to be processed
+
+For example, if `vars.file` contains an expression like `"{{now()}}"`,
+using `render()` ensures the current timestamp is inserted rather than
+the literal string “{{now()}}”\[6\].
