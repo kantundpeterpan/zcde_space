@@ -1,0 +1,126 @@
+---
+title: Week 3 - Data warehouses, BigQuery
+author: Heiner Atze
+execute:
+  cache: true
+format:
+  gfm:
+    output-ext: "md"
+    output-file: "README"
+abstract: Module notes enhanced with explanations by `perplexity.ai` 
+---
+
+# Data warehousing
+
+## OLTP /vs./ OLAP
+
+OLTP: Online transaction processing
+OLAP: Online analytical processing
+
+Data warehouses are OLAP solution used for reporting and data analysis
+
+General contents:
+
+- Meta data
+- Summary data
+- Raw data
+
+Data marts are data collections concerning certain topics or departments and provide clean data for analysis.
+
+# BigQuery
+
+- serverless data warehouse
+- combined software and infrastructure
+- included features:
+  - machine learning
+  - geospatial
+  - BI
+- Separates compute engine and data storage
+
+## Create external tables from google cloud storage
+
+``` sql
+CREATE OR REPLACE EXTERNAL TABLE `workspaceaddon-436615.zoomcamp.green_tripdata2020_ext`
+OPTIONS(
+  format = 'CSV',
+  uris = ['gs://workspaceaddon-436615/green_tripdata_2020-*.csv']
+)
+```
+
+## Partitioning in BigQuery
+
+- if one or more columns are expected to be used often for filtering, partitioning the table might be an advantage
+- reduces cost, as less data need to be processed
+
+``` sql
+-- create a non partitioned table within bigquery from external table
+CREATE OR REPLACE TABLE `workspaceaddon-436615.zoomcamp.green_tripdata2020` AS
+SELECT * FROM `workspaceaddon-436615.zoomcamp.green_tripdata2020_ext`
+```
+
+
+``` sql 
+-- create a partitioned table within bigquery from external table
+CREATE OR REPLACE TABLE `workspaceaddon-436615.zoomcamp.green_tripdata2020_part`
+PARTITION by
+  DATE(lpep_pickup_datetime) AS
+SELECT * FROM `workspaceaddon-436615.zoomcamp.green_tripdata2020_ext`
+```
+
+*What is the impact?*
+
+``` sql
+-- processes 23 MB of data
+SELECT DISTINCT(VendorID)
+FROM `workspaceaddon-436615.zoomcamp.green_tripdata2020`
+WHERE DATE(lpep_pickup_datetime) BETWEEN '2020-06-01' AND '2020-06-30';
+```
+
+``` sql
+-- processes < 1 MB of DataSELECT DISTINCT(VendorID)
+FROM `workspaceaddon-436615.zoomcamp.green_tripdata2020_part`
+WHERE DATE(lpep_pickup_datetime) BETWEEN '2020-06-01' AND '2020-06-30';
+```
+
+```{r}
+library(DBI)
+
+# Get the key path from environment variable
+key_path <- Sys.getenv("BIGQUERY_KEY_PATH")
+
+# Authenticate using the JSON key file
+bigrquery::bq_auth(path = key_path)
+
+con <- dbConnect(
+    bigrquery::bigquery(),
+    project = "workspaceaddon-436615",
+    dataset = "zoomcamp",
+    billing = "workspaceaddon-436615"
+)
+```
+
+```{sql}
+--| connection: con
+--| output.var: "results"
+-- Let's look into the partitons
+SELECT table_name, partition_id, total_rows
+FROM `zoomcamp.INFORMATION_SCHEMA.PARTITIONS`
+WHERE table_name = 'green_tripdata2020_part'
+ORDER BY total_rows DESC;
+```
+
+```{r}
+#| echo: false
+knitr::kable(results, format = "pipe")
+```
+
+## Combine Clustering with Partitioning
+
+``` sql
+-- create a partitioned table within bigquery from external table
+CREATE OR REPLACE TABLE `workspaceaddon-436615.zoomcamp.green_tripdata2020_clus`
+PARTITION by
+  DATE(lpep_pickup_datetime) 
+CLUSTER BY VendorID AS
+SELECT * FROM `workspaceaddon-436615.zoomcamp.green_tripdata2020_ext`
+```
