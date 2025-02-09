@@ -68,7 +68,8 @@ WHERE DATE(lpep_pickup_datetime) BETWEEN '2020-06-01' AND '2020-06-30';
 ```
 
 ``` sql
--- processes < 1 MB of DataSELECT DISTINCT(VendorID)
+-- processes < 1 MB of Data
+SELECT DISTINCT(VendorID)
 FROM `workspaceaddon-436615.zoomcamp.green_tripdata2020_part`
 WHERE DATE(lpep_pickup_datetime) BETWEEN '2020-06-01' AND '2020-06-30';
 ```
@@ -484,3 +485,251 @@ PARTITION by
 CLUSTER BY VendorID AS
 SELECT * FROM `workspaceaddon-436615.zoomcamp.green_tripdata2020_ext`
 ```
+
+## Partioning *vs.* Clustering
+
+$$
+\begin{array}{|l|l|}
+\hline \text { Clustering } & \text { Partitoning } \\
+\hline \text { Cost benefit unknown } & \text { Cost known upfront } \\
+\hline \begin{array}{l}
+\text { You need more granularity than partitioning } \\
+\text { alone allows }
+\end{array} & \text { You need partition-level management. } \\
+\hline \begin{array}{l}
+\text { Your queries commonly use filters or } \\
+\text { aggregation against multiple particular } \\
+\text { columns }
+\end{array} & \text { Filter or aggregate on single column } \\
+\hline \begin{array}{l}
+\text { The cardinality of the number of values in a } \\
+\text { column or group of columns is large }
+\end{array} & \\
+\hline
+\end{array}
+$$
+
+BigQuery partitioning divides large tables into smaller segments based
+on specific criteria like dates or ranges, which improves query
+performance and reduces costs by scanning less data. Clustering, on the
+other hand, organizes data by sorting and grouping it based on the
+contents of up to four specified columns, storing related data together
+for more efficient retrieval. While partitioning requires selecting a
+single column as the partitioning key, clustering can be applied on
+multiple columns, and the order of clustered columns determines the sort
+order of the data. Both features can be combined to achieve more
+finely-grained sorting and further query optimization However,
+clustering has limitations as it can only be specified during table
+creation and cannot be modified later.
+
+*When to prefer Clustering over partitioning?*
+
+- too small partitions \< 1 GB
+- too many partitions
+- too frequent data updates across all partiions
+
+## Automatic reclustering
+
+Upon insertion of new data, Bigquery performs automatic reclustering.
+This is performed in the background and for partitioned tables within
+the scope of each partition.
+
+# BigQuery best practices
+
+## Cost reduction
+
+The following best practices are specific to BigQuery:
+
+- **Use Partitioned Tables**:
+
+  BigQuery allows you to partition tables by date (or integer range),
+  significantly reducing the amount of data scanned during queries.
+
+- **Cluster Tables**:
+
+  Clustering in BigQuery helps organize data within a table based on
+  specified columns, improving query performance by reducing the data
+  scanned.
+
+- **Use Approximate Aggregation Functions**:
+
+  BigQuery provides functions like `APPROX_COUNT_DISTINCT()` that give
+  faster, approximate results with less processing time and lower costs.
+
+- **Leverage Materialized Views**:
+
+  BigQuery supports materialized views, which can store and maintain
+  aggregated results, reducing the cost of repeated computations on
+  large datasets.
+
+- **Use Streaming Inserts Efficiently**:
+
+  BigQuery charges differently for streaming data into tables compared
+  to batch inserts, so recommendations around these methods are specific
+  to BigQuery’s pricing model.
+
+- **Materialize Query Results in Stages**:
+
+  Save intermediate results in tables to avoid recomputation, simplify
+  complex queries, reuse data across multiple queries, and enhance
+  overall query performance in BigQuery.
+
+# BigQuery best practices
+
+## Query performance
+
+Here’s a concise bullet point list for BigQuery best practices related
+to query performance:
+
+## Query performance
+
+- **Use Standard SQL**: Leverage the latest SQL features and
+  optimizations.
+- **Select Only Necessary Columns**: Use `SELECT` statements to only
+  retrieve the data you need.
+- **Limit the Number of Rows**: Use `LIMIT` to reduce the dataset size
+  if not all rows are required.
+- **Partition Tables**: Use table partitioning to improve query times,
+  especially for large datasets.
+- **Cluster Tables**: Organize tables by specific columns to enhance
+  performance on filtered queries.
+- \*\* Avoid SELECT \* \*\*: Specify columns instead of using `SELECT *`
+  to reduce data transfer and processing time.
+- **Use WITH Clauses**: Break down complex queries into simpler
+  components for better readability and execution.
+- **Optimize JOINs**:
+  - Use appropriate join types (INNER, LEFT, etc.).
+  - Avoid joining large tables if possible.
+- **Query Caching**: Take advantage of cached results for repeated
+  queries to save time.
+- **Materialized Views**: Use materialized views to precompute and store
+  complex query results.
+- **Use Temporary Tables**: Consider storing intermediate results in
+  temporary tables to streamline complex analyses.
+- **Monitor Query Performance**: Utilize BigQuery’s built-in monitoring
+  tools to identify and troubleshoot slow queries.
+- **Reduce Cross-Region Queries**: If possible, ensure datasets and
+  queries operate within the same region to minimize latency and cost.
+
+### Understanding `WITH` clauses (CTEs) and prepared statements
+
+1.  **CTEs vs. Prepared Statements**:
+
+    - **CTEs (`WITH` clauses)** are essentially a way to simplify your
+      SQL queries by creating temporary result sets that can be
+      referenced within a single query. They are used to make queries
+      more readable and structured.
+
+    - **Prepared Statements** are a feature often used in database
+      programming that allows you to precompile SQL statements with
+      placeholders for parameters. This can enhance performance and
+      security (e.g., against SQL injection attacks) by separating query
+      logic from data.
+
+2.  **Execution Context**:
+
+    - CTEs are executed as part of the query they are defined within and
+      cannot be reused or executed independently. Each time you run a
+      query containing a CTE, the CTE is recomputed.
+    - Prepared statements are compiled and stored in memory, allowing
+      for faster repeated execution with different parameters.
+
+3.  **Performance Considerations**:
+
+    - If you treat `WITH` clauses like prepared statements (i.e.,
+      thinking they can be reused efficiently), you might be misled
+      regarding their performance. CTEs can have overhead since they are
+      re-evaluated for each execution of the main query, especially in
+      queries where CTEs are referenced multiple times.
+
+4.  **Code Structure**:
+
+    - Treating CTEs like prepared statements may lead to complex queries
+      that become harder to read or maintain. Instead, use CTEs for
+      clarity in breaking down queries, but do not assume they will
+      function with the same efficiency or behavior as prepared
+      statements.
+
+# Internals of Bigquery
+
+## Hardware architecture
+
+Google BigQuery is built on a unique architecture that separates query
+computation from data storage, enabling high efficiency and scalability.
+This architecture leverages:
+
+- **Colossus Storage**: This is Google’s distributed file system
+  designed for high-performance storage of large datasets. Colossus
+  allows BigQuery to manage and store massive amounts of data across
+  multiple locations, ensuring durability and availability. Data is
+  stored in a columnar format, which enhances compression and retrieval
+  efficiency, especially for analytical queries.
+
+- **Jupiter Network**: Jupiter is Google’s next-generation data center
+  network that provides the high-speed interconnectivity required to
+  transfer data between computing resources and storage systems. It
+  enables BigQuery to efficiently handle large-scale data processing by
+  facilitating quick access to data stored in Colossus. The low-latency,
+  high-bandwidth capabilities of Jupiter allow for rapid execution of
+  complex queries, further boosting performance for users.
+
+Together, Colossus Storage and Jupiter Network enable BigQuery to
+deliver a serverless, scalable, and efficient data warehousing solution
+suitable for large-scale analytics and real-time data processing.
+
+## Column-oriented *vs.* record-oriented storage
+
+Column-oriented storage organizes data by columns rather than rows,
+allowing for efficient access and compression of similar data types.
+This structure is particularly beneficial for analytical queries that
+require operations on large datasets and often involve aggregations, as
+it significantly reduces the amount of data that needs to be read from
+disk, making it ideal for read-heavy workloads and analytics
+applications.
+
+On the other hand, record-oriented storage structures data by rows,
+storing all attributes of a record together. This format is advantageous
+for transaction processing and scenarios where complete records are
+accessed frequently, such as in online transaction processing (OLTP)
+systems. It improves performance for operations that involve inserting,
+updating, or reading entire records, making it a suitable choice for
+real-time applications that require quick access to individual records.
+
+## Internal query processing - DREMEL
+
+Dremel is a distributed query system developed by Google, designed for
+running fast and interactive SQL queries on large datasets. Here’s a
+concise explanation of how Dremel computes the result of a query:
+
+1.  **Parsing and Query Planning**: When a query is submitted, Dremel
+    first parses the SQL statement to create a query execution plan.
+    This includes analyzing the query structure, validating the syntax,
+    and optimizing the execution path based on the schema and available
+    resources.
+
+2.  **Columnar Storage**: Dremel accesses data stored in a columnar
+    format, which allows it to read only relevant columns for the query,
+    significantly reducing the amount of data processed and improving
+    performance.
+
+3.  **Tree Architecture**: Dremel employs a tree-like architecture with
+    multiple levels of workers. The root of the tree is responsible for
+    receiving the query and distributing it to child nodes. Each node
+    may further distribute tasks to its own children, allowing for
+    massive parallel processing.
+
+4.  **Execution**: Each worker node executes its part of the query using
+    a combination of execution strategies, including selective reading,
+    filtering, and aggregating data. The computation is highly
+    parallelized, taking advantage of multiple processors to speed up
+    the query execution.
+
+5.  **Result Aggregation**: As the worker nodes complete their tasks,
+    they send intermediate results back to their parent nodes. This
+    process continues up the tree, with nodes aggregating results until
+    the final output is returned to the root node.
+
+6.  **Final Output**: The root node compiles the results from all child
+    nodes and returns the final result to the user. This approach
+    ensures that Dremel can handle large-scale queries efficiently, even
+    over vast datasets.
