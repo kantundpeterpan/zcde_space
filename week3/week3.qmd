@@ -2,7 +2,7 @@
 title: Week 3 - Data warehouses, BigQuery
 author: Heiner Atze
 execute:
-  cache: true
+  cache: refresh
 format:
   gfm:
     output-ext: "md"
