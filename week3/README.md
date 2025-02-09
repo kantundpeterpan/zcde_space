@@ -79,7 +79,12 @@ library(DBI)
 
 # Get the key path from environment variable
 key_path <- Sys.getenv("BIGQUERY_KEY_PATH")
+print(key_path)
+```
 
+    [1] "/home/kantundpeterpan/projects/zoomcamp/zcde_space/week1/3_intro_terraform/workspaceaddon-436615-4bcf737409b7.json"
+
+``` r
 # Authenticate using the JSON key file
 bigrquery::bq_auth(path = key_path)
 
@@ -96,7 +101,8 @@ con <- dbConnect(
 SELECT table_name, partition_id, total_rows
 FROM `zoomcamp.INFORMATION_SCHEMA.PARTITIONS`
 WHERE table_name = 'green_tripdata2020_part'
-ORDER BY total_rows DESC;
+ORDER BY total_rows DESC
+LIMIT 10;
 ```
 
 | table_name              | partition_id | total_rows |

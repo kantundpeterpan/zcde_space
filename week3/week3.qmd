@@ -107,7 +107,8 @@ con <- dbConnect(
 SELECT table_name, partition_id, total_rows
 FROM `zoomcamp.INFORMATION_SCHEMA.PARTITIONS`
 WHERE table_name = 'green_tripdata2020_part'
-ORDER BY total_rows DESC;
+ORDER BY total_rows DESC
+LIMIT 10;
 ```
 
 ```{r}
