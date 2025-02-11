@@ -371,3 +371,179 @@ concise explanation of how Dremel computes the result of a query:
     nodes and returns the final result to the user. This approach
     ensures that Dremel can handle large-scale queries efficiently, even
     over vast datasets.
+
+# Machine learning using BigQuery
+
+Google BigQuery offers powerful machine learning capabilities through
+BigQuery ML (BigQuery Machine Learning), which allows you to build and
+deploy machine learning models directly within the BigQuery environment
+using SQL queries. This makes it accessible for data analysts and data
+scientists who may not be familiar with programming in Python or R.
+
+### Key Features
+
+- **In-database Processing**: Train models directly on large datasets
+  without the need for data export.
+- **Familiar SQL Interface**: Users can leverage standard SQL syntax to
+  create and interact with machine learning models.
+- **Integration**: Seamlessly integrates with other Google Cloud
+  services, making it easy to manage data and models.
+
+### Code Examples
+
+1.  **Creating a Model**: To create a linear regression model, you can
+    use the following SQL statement:
+
+    ``` sql
+    CREATE OR REPLACE MODEL `your_project_id.your_dataset.your_model`
+    OPTIONS(
+     model_type='linear_reg',
+     input_label_cols=["target"],
+     DATA_SPLIT_METHOD='AUTO_SPLIT'
+     ) AS
+    SELECT
+      feature1,
+      feature2,
+      target
+    FROM
+      `your_project_id.your_dataset.your_table`;
+    ```
+
+2.  **Evaluating a Model**: After the model is created, you can evaluate
+    its performance:
+
+    ``` sql
+    SELECT
+      *
+    FROM
+      ML.EVALUATE(MODEL `your_project_id.your_dataset.your_model`,
+      (
+        SELECT
+          feature1,
+          feature2,
+          target
+        FROM
+          `your_project_id.your_dataset.your_table`));
+    ```
+
+3.  **Making Predictions**: Once the model is trained, you can use it to
+    make predictions on new data:
+
+    ``` sql
+    SELECT
+      *
+    FROM
+      ML.PREDICT(MODEL `your_project_id.your_dataset.your_model`,
+      (
+        SELECT
+          feature1,
+          feature2
+        FROM
+          `your_project_id.your_dataset.new_data_table`));
+    ```
+
+### Supported Algorithms
+
+BigQuery ML supports several algorithms, including linear regression,
+logistic regression, K-means clustering, and various types of neural
+networks, making it versatile for numerous use cases.
+
+### Conclusion
+
+Google BigQuery ML simplifies the process of building and deploying
+machine learning models, allowing users to harness the power of Google
+Cloud’s big data capabilities with their existing SQL skills. This
+integration is particularly useful for organizations looking to leverage
+data for predictive analytics without the overhead of complex machine
+learning infrastructure.’
+
+## Deployment
+
+Here’s a concise guide to deploy a BigQuery ML model with TensorFlow
+Serving:
+
+Prep step - Get the model out of BigQuery
+
+There are 3 main ways to export a BigQuery ML model to a Cloud Storage
+bucket:
+
+1.  Using the Console:
+
+``` bash
+- Open BigQuery in Google Cloud Console
+- Navigate to Resources > Your Project > Dataset
+- Click on your model
+- Click "Export Model"
+- Select Cloud Storage location
+- Click "Export"
+```
+
+2.  Using SQL:
+
+``` sql
+EXPORT MODEL `myproject.mydataset.mymodel` 
+OPTIONS(URI = 'gs://bucket/path/to/saved_model/')
+```
+
+3.  Using bq command-line:
+
+``` bash
+bq extract --model \
+'mydataset.mymodel' \
+gs://example-bucket/mymodel_folder
+```
+
+The exported model will be in TensorFlow SavedModel format by
+default\[1\]. Make sure you have the necessary permissions to access the
+BigQuery ML model and write to the Cloud Storage bucket\[1\]. The
+BigQuery dataset and the Cloud Storage bucket must be in the same
+location\[1\].
+
+Citations: \[1\] https://cloud.google.com/bigquery/docs/exporting-models
+\[2\]
+https://codelabs.developers.google.com/codelabs/bqml-vertex-prediction
+\[3\] https://beam.apache.org/documentation/patterns/bqml/ \[4\]
+https://wiki.sfeir.com/googlecloudplatform/bigdata/bigquery/bigqueryml/
+\[5\]
+https://www.googlecloudcommunity.com/gc/Infrastructure-Compute-Storage/Export-BigQuery-table-to-Google-Cloud-Storage-in-a-separate/m-p/700490
+\[6\] https://cloud.google.com/bigquery/docs/export-model-tutorial \[7\]
+https://stackoverflow.com/questions/78517490/bigquery-ml-model-to-predict-outside-bq
+\[8\]
+https://stackoverflow.com/questions/48127069/using-google-ml-engine-with-bigquery
+
+1.  Prepare model directory:
+
+``` bash
+mkdir -p /models/mymodel/1
+gsutil cp -r gs://your-bucket/model/* /models/mymodel/1/
+```
+
+2.  Create directory structure:
+
+<!-- -->
+
+    /models/
+      └── mymodel/
+          └── 1/
+              ├── saved_model.pb
+              └── variables/
+
+3.  Deploy with Docker:
+
+``` bash
+docker pull tensorflow/serving
+docker run -t --rm -p 8501:8501 \
+    -v "/models:/models" \
+    -e MODEL_NAME=mymodel \
+    tensorflow/serving
+```
+
+4.  Test deployment:
+
+``` bash
+curl -X POST http://localhost:8501/v1/models/mymodel:predict \
+    -d '{"instances": [your_input_data]}'
+```
+
+Note: Ensure model version directory (1) contains saved_model.pb and
+variables directory from BigQuery ML export.
