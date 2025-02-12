@@ -547,3 +547,281 @@ curl -X POST http://localhost:8501/v1/models/mymodel:predict \
 
 Note: Ensure model version directory (1) contains saved_model.pb and
 variables directory from BigQuery ML export.
+
+# Homework
+
+## Preparation - load the data to GCS using Kestra
+
+``` yaml
+id: taxi_parquet
+namespace: zoomcamp
+
+inputs:
+  - id: taxi
+    type: SELECT
+    displayName: Select taxi type
+    values: [yellow, green]
+    defaults: yellow
+
+  - id: year
+    type: INT
+    displayName: Year
+    defaults: 2024
+
+  - id: month
+    type: SELECT
+    values: [1,2,3,4,5,6,7,8,9,10,11,12]
+    displayName: month
+    defaults: 1
+
+variables:
+  file: "{{inputs.taxi}}_tripdata_{{inputs.year}}-{{inputs.month |  number('INT') | numberFormat('00')}}.parquet"
+  gcs_file: "gs://{{kv('GCP_BUCKET_NAME')}}/{{vars.file}}"
+  table: "{{kv('GCP_DATASET')}}.{{inputs.taxi}}_tripdata_{{inputs.year}}-{{inputs.month |  number('INT') | numberFormat('00')}}"
+  data: "{{outputs.extract.outputFiles[render(vars.file)]}}"
+
+# inputs.taxi ~ '_tripdata_' ~ inputs.year ~ '-' ~ inputs.month |  number('INT') | numberFormat('00') ~ '.parquet'
+
+tasks:
+  - id: set_label
+    type: io.kestra.plugin.core.execution.Labels
+    labels:
+      file: "{{render(vars.file)}}"
+      taxi: "{{inputs.taxi}}"
+
+  - id: extract
+    type: io.kestra.plugin.scripts.shell.Commands
+    outputFiles:
+      - "*.parquet"
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - wget -q https://d37ci6vzurychx.cloudfront.net/trip-data/{{render(vars.file)}}
+
+  - id: upload_to_gcs
+    type: io.kestra.plugin.gcp.gcs.Upload
+    from: "{{render(vars.data)}}"
+    to: "{{render(vars.gcs_file)}}"
+
+  - id: purge_files
+    type: io.kestra.plugin.core.storage.PurgeCurrentExecutionFiles
+    description: To avoid cluttering your storage, we will remove the downloaded files
+
+pluginDefaults:
+  - type: io.kestra.plugin.gcp
+    values:
+      serviceAccount: "{{kv('GCP_CREDS')}}"
+      projectId: "{{kv('GCP_PROJECT_ID')}}"
+      location: "{{kv('GCP_LOCATION')}}"
+      bucket: "{{kv('GCP_BUCKET_NAME')}}"
+```
+
+- Creating external tables:
+
+  - one by one
+
+    ``` sql
+    CREATE EXTERNAL TABLE `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024-01` AS
+    OPTIONS(
+        format ="parquet",
+        uris = ['gs://workspaceaddon-436615/yellow_tripdata_2024-01.parquet']
+        );
+    ```
+
+  - using a for loop
+
+    ``` sql
+    BEGIN
+      FOR month_number IN (
+        SELECT FORMAT('%02d', num) as month
+        FROM UNNEST(GENERATE_ARRAY(3, 6)) as num
+      ) DO
+        EXECUTE IMMEDIATE FORMAT("""
+          CREATE EXTERNAL TABLE `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024-%s`
+          OPTIONS(
+            format = "parquet",
+            uris = ['gs://workspaceaddon-436615/yellow_tripdata_2024-%s.parquet']
+          )
+        """, month_number.month, month_number.month
+        );
+      END FOR;
+    END;
+    ```
+
+  - Materialize Tables
+
+``` sql
+BEGIN
+  FOR month_number IN (
+    SELECT FORMAT('%02d', num) as month
+    FROM UNNEST(GENERATE_ARRAY(1, 6)) as num
+  ) DO
+    EXECUTE IMMEDIATE FORMAT("""
+      CREATE TABLE `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024-%s` AS
+      SELECT * FROM `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024-%s_ext`
+    """, month_number.month, month_number.month
+    );
+  END FOR;
+END;
+```
+
+## Question 1:
+
+What is count of records for the 2024 Yellow Taxi Data?
+
+``` sql
+--| connection: con
+--| output.var: "results"
+-- union all tables
+EXECUTE IMMEDIATE (
+  WITH months AS (
+    SELECT FORMAT('SELECT COUNT(*) as count FROM `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024-%02d`', num) as query
+    FROM UNNEST(GENERATE_ARRAY(1, 6)) as num
+  )
+  SELECT 'SELECT SUM(count) as total_records FROM (' || STRING_AGG(query, ' UNION ALL ') || ')'
+  FROM months
+);
+```
+
+| table_name              | partition_id | total_rows |
+|:------------------------|:-------------|-----------:|
+| green_tripdata2020_part | 20200109     |      18491 |
+| green_tripdata2020_part | 20200110     |      18307 |
+| green_tripdata2020_part | 20200108     |      17586 |
+| green_tripdata2020_part | 20200107     |      17027 |
+| green_tripdata2020_part | 20200214     |      16574 |
+| green_tripdata2020_part | 20200106     |      16323 |
+| green_tripdata2020_part | 20200228     |      16246 |
+| green_tripdata2020_part | 20200103     |      16062 |
+| green_tripdata2020_part | 20200227     |      16034 |
+| green_tripdata2020_part | 20200117     |      16011 |
+
+- [ ] 65,623
+- [ ] 840,402
+- [x] 20,332,093
+- [ ] 85,431,289
+
+## Question 2:
+
+Write a query to count the distinct number of PULocationIDs for the
+entire dataset on both the tables.</br> What is the **estimated amount**
+of data that will be read when this query is executed on the External
+Table and the Table?
+
+``` sql
+SELECT COUNT(DISTINCT PULocationIDs)
+FROM `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024_ext`
+```
+
+``` sql
+SELECT COUNT(DISTINCT PULocationIDs)
+FROM `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024`
+```
+
+- [ ] 18.82 MB for the External Table and 47.60 MB for the Materialized
+  Table
+- [x] 0 MB for the External Table and 155.12 MB for the Materialized
+  Table
+- [ ] 2.14 GB for the External Table and 0MB for the Materialized Table
+- [ ] 0 MB for the External Table and 0MB for the Materialized Table
+
+## Question 3:
+
+Write a query to retrieve the PULocationID from the table (not the
+external table) in BigQuery. Now write a query to retrieve the
+PULocationID and DOLocationID on the same table. Why are the estimated
+number of Bytes different?
+
+- BigQuery is a columnar database, and it only scans the specific
+  columns requested in the query. Querying two columns (PULocationID,
+  DOLocationID) requires reading more data than querying one column
+  (PULocationID), leading to a higher estimated number of bytes
+  processed.
+
+- BigQuery duplicates data across multiple storage partitions, so
+  selecting two columns instead of one requires scanning the table
+  twice, doubling the estimated bytes processed.
+
+- BigQuery automatically caches the first queried column, so adding a
+  second column increases processing time but does not affect the
+  estimated bytes scanned.
+
+- When selecting multiple columns, BigQuery performs an implicit join
+  operation between them, increasing the estimated bytes processed
+
+## Question 4:
+
+How many records have a fare_amount of 0?
+
+``` sql
+SELECT COUNT(*)
+FROM `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024`
+WHERE fare_amount = 0
+```
+
+- [ ] 128,210
+- [ ] 546,578
+- [ ] 20,188,016
+- [x] 8,333
+
+## Question 5:
+
+What is the best strategy to make an optimized table in Big Query if
+your query will always filter based on tpep_dropoff_datetime and order
+the results by VendorID (Create a new table with this strategy)
+
+- [x] Partition by tpep_dropoff_datetime and Cluster on VendorID
+- [ ] Cluster on by tpep_dropoff_datetime and Cluster on VendorID
+- [ ] Cluster on tpep_dropoff_datetime Partition by VendorID
+- [ ] Partition by tpep_dropoff_datetime and Partition by VendorID
+
+``` sql
+CREATE TABLE `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024_clus`
+PARTITION BY DATE(tpep_dropoff_datetime)
+CLUSTER BY VendorID AS (
+SELECT * FROM `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024`
+)
+```
+
+## Question 6:
+
+Write a query to retrieve the distinct VendorIDs between
+tpep_dropoff_datetime 2024-03-01 and 2024-03-15 (inclusive)</br>
+
+Use the materialized table you created earlier in your from clause and
+note the estimated bytes. Now change the table in the from clause to the
+partitioned table you created for question 5 and note the estimated
+bytes processed. What are these values? </br>
+
+``` sql
+SELECT DISTINCT VendorID
+FROM `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024`
+WHERE DATE(tpep_dropoff_datetime) BETWEEN '2024-03-01' AND '2024-03-15'
+```
+
+Choose the answer which most closely matches.</br>
+
+- [ ] 12.47 MB for non-partitioned table and 326.42 MB for the
+  partitioned table
+- [x] 310.24 MB for non-partitioned table and 26.84 MB for the
+  partitioned table
+- [ ] 5.87 MB for non-partitioned table and 0 MB for the partitioned
+  table
+- [ ] 310.31 MB for non-partitioned table and 285.64 MB for the
+  partitioned table
+
+## Question 7:
+
+Where is the data stored in the External Table you created?
+
+- [ ] Big Query
+- [ ] Container Registry
+- [x] GCP Bucket
+- [ ] Big Table
+
+## Question 8:
+
+It is best practice in Big Query to always cluster your data:
+
+- [ ] True
+- [x] False
