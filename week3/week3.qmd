@@ -537,7 +537,7 @@ END;
 
 What is count of records for the 2024 Yellow Taxi Data?
 
-``` sql
+```{sql}
 --| connection: con
 --| output.var: "results"
 -- union all tables

@@ -670,8 +670,7 @@ END;
 What is count of records for the 2024 Yellow Taxi Data?
 
 ``` sql
---| connection: con
---| output.var: "results"
+
 -- union all tables
 EXECUTE IMMEDIATE (
   WITH months AS (
@@ -681,20 +680,11 @@ EXECUTE IMMEDIATE (
   SELECT 'SELECT SUM(count) as total_records FROM (' || STRING_AGG(query, ' UNION ALL ') || ')'
   FROM months
 );
+
 ```
 
-| table_name              | partition_id | total_rows |
-|:------------------------|:-------------|-----------:|
-| green_tripdata2020_part | 20200109     |      18491 |
-| green_tripdata2020_part | 20200110     |      18307 |
-| green_tripdata2020_part | 20200108     |      17586 |
-| green_tripdata2020_part | 20200107     |      17027 |
-| green_tripdata2020_part | 20200214     |      16574 |
-| green_tripdata2020_part | 20200106     |      16323 |
-| green_tripdata2020_part | 20200228     |      16246 |
-| green_tripdata2020_part | 20200103     |      16062 |
-| green_tripdata2020_part | 20200227     |      16034 |
-| green_tripdata2020_part | 20200117     |      16011 |
+| total_records |
+|--------------:|
 
 - [ ] 65,623
 - [ ] 840,402
