@@ -84,6 +84,7 @@ WHERE DATE(lpep_pickup_datetime) BETWEEN '2020-06-01' AND '2020-06-30';
 ```
 
 ```{r}
+#| echo: false
 library(DBI)
 
 # Get the key path from environment variable
@@ -448,8 +449,6 @@ variables:
   table: "{{kv('GCP_DATASET')}}.{{inputs.taxi}}_tripdata_{{inputs.year}}-{{inputs.month |  number('INT') | numberFormat('00')}}"
   data: "{{outputs.extract.outputFiles[render(vars.file)]}}"
 
-# inputs.taxi ~ '_tripdata_' ~ inputs.year ~ '-' ~ inputs.month |  number('INT') | numberFormat('00') ~ '.parquet'
-
 tasks:
   - id: set_label
     type: io.kestra.plugin.core.execution.Labels
@@ -518,20 +517,20 @@ pluginDefaults:
 
   - Materialize Tables
 
-```sql
-BEGIN
-  FOR month_number IN (
-    SELECT FORMAT('%02d', num) as month
-    FROM UNNEST(GENERATE_ARRAY(1, 6)) as num
-  ) DO
-    EXECUTE IMMEDIATE FORMAT("""
-      CREATE TABLE `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024-%s` AS
-      SELECT * FROM `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024-%s_ext`
-    """, month_number.month, month_number.month
-    );
-  END FOR;
-END;
-```
+    ```sql
+    BEGIN
+      FOR month_number IN (
+        SELECT FORMAT('%02d', num) as month
+        FROM UNNEST(GENERATE_ARRAY(1, 6)) as num
+      ) DO
+        EXECUTE IMMEDIATE FORMAT("""
+          CREATE TABLE `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024-%s` AS
+          SELECT * FROM `workspaceaddon-436615.zoomcamp.yellow_trip_data_2024-%s_ext`
+        """, month_number.month, month_number.month
+        );
+      END FOR;
+    END;
+    ```
 
 ## Question 1:
 
