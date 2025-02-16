@@ -1,0 +1,13 @@
+---
+title: Workshop 1 - Data ingestion with `dlt`
+subtitle: workshop notes
+author: Heiner Atze
+execute:
+  cache: refresh
+format:
+  gfm:
+    output-ext: "md"
+    output-file: "README"
+abstract: Workshop notes enhanced with explanations by `perplexity.ai` and/or `OpenAI` 
+---
+
