@@ -176,7 +176,6 @@ case {{ payment_type }}
   when 1 then 'Credit card'
   when 1 then 'Cash'
   --....
-enhanced
 
 {%- endmacro %}
 ```
@@ -271,6 +270,16 @@ packages:
 - copy the .csv file to the `seeds` folder
 - `dbt build` will materialize a table in the data warehoue
 
-**Some cleaning using model**
+**Some cleaning using and creation of a dimensions table for the zones**
 
-- see [dim_zones.sql]()
+- see [dim_zones.sql](./dbt/taxi_rides_ny/models/core/dim_zones.sql)
+
+# Creating the facts table for the taxi trips
+
+- see [fact_trips.sql](./dbt/taxi_rides_ny/models/core/facts_trips.sql)
+
+> [!IMPORTANT]
+>
+> The `dev_limit` as described in the lecture DOES NOT limit the amount
+> of data processed during the query/model build BUT only the size of
+> the final table!
