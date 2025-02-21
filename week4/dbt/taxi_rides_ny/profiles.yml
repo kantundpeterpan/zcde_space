@@ -1,0 +1,10 @@
+bigquery_zoomcamp:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: workspaceaddon-436615
+      dataset: zoomcamp
+      threads: 4 # Must be a value of 1 or greater
+      keyfile: "/home/kantundpeterpan/projects/zoomcamp/zcde_space/week1/3_intro_terraform/workspaceaddon-436615-4bcf737409b7.json"

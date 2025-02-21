@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+
+    - name: staging
+      database: workspaceaddon-436615
+      schema: zoomcamp
+
+      tables:
+        - name: yellow_tripdata
+        - name: green_tripdata
