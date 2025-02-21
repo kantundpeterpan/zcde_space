@@ -5,6 +5,7 @@
 name: 'taxi_rides_ny'
 version: '1.0.0'
 config-version: 2
+# packages-install-path: ./dbt_packages
 
 # This setting configures which "profile" dbt uses for this project.
 profile: 'bigquery_zoomcamp'

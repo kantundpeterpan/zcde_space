@@ -247,3 +247,37 @@ packages:
         ) }} as tripid,
 --...
 ```
+
+# Variables
+
+- Variables can be defined in the `project.yml`
+
+  ```yml
+  vars:
+    payment_type_values: [1, 2, 3, 4, 5, 6]
+  ```
+
+- or on the command line in combination with a model definition
+
+  ```bash
+  dbt build --select <model_name> --vars '{'is_test_run': 'false'}'
+  ```
+  and
+
+  ```
+  -- dbt build --select <model_name> --vars '{'is_test_run': 'false'}'
+  {% if var('is_test_run', default=true) %}
+
+    limit 100
+
+  {% endif %}
+  ```
+
+## Using `seeds` for the `taxi_zone_lookup` table
+
+- copy the .csv file to the `seeds` folder
+- `dbt build` will materialize a table in the data warehoue
+
+**Some cleaning using model**
+
+- see [dim_zones.sql]()
