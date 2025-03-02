@@ -283,3 +283,51 @@ packages:
 > The `dev_limit` as described in the lecture DOES NOT limit the amount
 > of data processed during the query/model build BUT only the size of
 > the final table!
+
+# Testing and documentation
+
+- definition of test cases in `schema.yml` files
+- per column
+- basic checks:
+  - unique
+  - not null
+  - is accepted value
+  - inclusion dependencies
+- run with `dbt test`
+
+``` yml
+...
+models:
+    - name: stg_green_tripdata
+      columns:
+          - name: tripid
+            description: Primary key for this table, generated with a concatenation of vendorid+pickup_datetime
+            tests:
+                - unique:
+                    severity: warn
+                - not_null:
+                    severity: warn
+....
+```
+
+# Cross database macros
+
+# `dbt` codegen package
+
+- programmatic generation of model `.sql` and `.yml` files
+
+``` jinja-sql
+```
+
+# Homework
+
+## Question 5
+
+``` sql
+...
+EXTRACT(YEAR FROM trips_unioned.pickup_datetime) as year,
+EXTRACT(MONTH FROM trips_unioned.pickup_datetime) as month,
+format_date('%Q', trips_unioned.pickup_datetime) as quarter,
+CONCAT(EXTRACT(YEAR FROM trips_unioned.pickup_datetime), "/Q", format_date('%Q', trips_unioned.pickup_datetime)) as year_quarter,
+...
+```
