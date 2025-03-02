@@ -28,7 +28,7 @@ trips_unioned as (
 
 dim_zones as (
     select * from {{ ref('dim_zones') }}
-    where borough != 'Unknown'
+    -- where borough != 'Unknown'
 )
 
 select
@@ -42,7 +42,11 @@ select
     trips_unioned.dropoff_locationid,
     dropoff_zone.borough as dropoff_borough, 
     dropoff_zone.zone as dropoff_zone,  
-    trips_unioned.pickup_datetime, 
+    trips_unioned.pickup_datetime,
+    EXTRACT(YEAR FROM trips_unioned.pickup_datetime) as year,
+    EXTRACT(MONTH FROM trips_unioned.pickup_datetime) as month,
+    format_date('%Q', trips_unioned.pickup_datetime) as quarter,
+    CONCAT(EXTRACT(YEAR FROM trips_unioned.pickup_datetime), "/Q", format_date('%Q', trips_unioned.pickup_datetime)) as year_quarter,
     trips_unioned.dropoff_datetime, 
     trips_unioned.store_and_fwd_flag, 
     trips_unioned.passenger_count, 
