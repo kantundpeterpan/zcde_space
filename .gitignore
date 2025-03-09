@@ -40,3 +40,10 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+week5/*.csv*
+week5/*.jar
+week5/fhvhv
+
+.venv
+.ipynb_checkpoints
