@@ -352,3 +352,160 @@ spark-submit \
     --output /data/report/2021
 ```
 
+# Homework
+
+## Imports and Spark spin up
+
+``` python
+import pyspark
+from pyspark.sql import SparkSession
+```
+
+``` python
+import os
+
+from pathlib import Path
+```
+
+``` python
+os.chdir(Path("projects/zoomcamp/zcde_space/week5").resolve())
+```
+
+``` python
+pwd = Path(os.getcwd())
+```
+
+``` python
+spark = SparkSession.builder \
+    .master("local[*]") \
+    .getOrCreate()
+```
+
+    25/03/10 11:29:25 WARN Utils: Your hostname, mystuff resolves to a loopback address: 127.0.1.1; using 193.168.147.155 instead (on interface eth0)
+    25/03/10 11:29:25 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+    Setting default log level to "WARN".
+    To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+    25/03/10 11:29:26 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+
+``` python
+df = spark.read.parquet(
+    str(pwd / "yellow_tripdata_2024-10.parquet")
+    )
+```
+
+## Question 2                                                                      
+
+``` python
+# df.repartition(4).write.parquet(str( pwd / "homework"))
+```
+
+``` python
+!ls -lh ./homework/
+```
+
+    total 90M
+    -rw-r--r-- 1 kantundpeterpan kantundpeterpan   0 Mar 10 11:18 _SUCCESS
+    -rw-r--r-- 1 kantundpeterpan kantundpeterpan 23M Mar 10 11:18 part-00000-4bc1ca0e-8325-44f7-b773-bf81ac796b74-c000.snappy.parquet
+    -rw-r--r-- 1 kantundpeterpan kantundpeterpan 23M Mar 10 11:18 part-00001-4bc1ca0e-8325-44f7-b773-bf81ac796b74-c000.snappy.parquet
+    -rw-r--r-- 1 kantundpeterpan kantundpeterpan 23M Mar 10 11:18 part-00002-4bc1ca0e-8325-44f7-b773-bf81ac796b74-c000.snappy.parquet
+    -rw-r--r-- 1 kantundpeterpan kantundpeterpan 23M Mar 10 11:18 part-00003-4bc1ca0e-8325-44f7-b773-bf81ac796b74-c000.snappy.parquet
+
+## Question 3
+
+``` python
+from pyspark.sql import functions as F
+```
+
+``` python
+df.registerTempTable("oct24")
+```
+
+    /home/kantundpeterpan/projects/zoomcamp/zcde_space/week5/.venv/lib/python3.11/site-packages/pyspark/sql/dataframe.py:329: FutureWarning: Deprecated in 2.0, use createOrReplaceTempView instead.
+      warnings.warn("Deprecated in 2.0, use createOrReplaceTempView instead.", FutureWarning)
+
+``` python
+df \
+    .filter(
+        F.to_date(df.tpep_pickup_datetime) == '2024-10-15') \
+    .count()
+```
+
+                                                                                    
+
+    128893
+
+## Question 4
+
+``` python
+max_dur = spark.sql("""
+   SELECT
+     MAX(
+     EXTRACT(
+        DAY FROM
+         tpep_dropoff_datetime - tpep_pickup_datetime
+      ) * 24 + EXTRACT(
+        HOUR FROM
+         tpep_dropoff_datetime - tpep_pickup_datetime
+      )) as max_duration_h
+   FROM oct24       
+""")
+```
+
+``` python
+max_dur.show()
+```
+                                                            
+
+    +--------------+
+    |max_duration_h|
+    +--------------+
+    |           162|
+    +--------------+
+
+## Question 6
+
+``` python
+zones = spark.read \
+    .option("header", 'true') \
+    .option("inferSchema", 'true') \
+    .csv(str(pwd / "taxi_zone_lookup.csv"))
+```
+
+``` python
+zones.printSchema()
+```
+
+    root
+     |-- LocationID: integer (nullable = true)
+     |-- Borough: string (nullable = true)
+     |-- Zone: string (nullable = true)
+     |-- service_zone: string (nullable = true)
+
+``` python
+zones.createOrReplaceTempView("zones")
+```
+
+``` python
+df.join(zones.withColumnRenamed("LocationID", "PULocationID"),
+        on = "PULocationID") \
+    .select("Zone") \
+    .groupby("Zone") \
+    .count() \
+    .sort(F.asc('count')) \
+    .limit(1).show()
+```
+
+    [Stage 10:=============================>                            (4 + 4) / 8]
+
+    +--------------------+-----+
+    |                Zone|count|
+    +--------------------+-----+
+    |Governor's Island...|    1|
+    +--------------------+-----+
+
+                                                                                    
+
+``` python
+spark.stop()
+```
+

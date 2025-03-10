@@ -47,3 +47,4 @@ week5/fhvhv
 
 .venv
 .ipynb_checkpoints
+*.parquet
